@@ -22,13 +22,14 @@ class DatabaseStore
 	constructor( schema )
 	{
 		this.schema = schema;
+		this.debug	= false;
 	}
 
 	static getDefaultSchema()
 	{
 		return {
 			name		: 'default'
-			,version	: 1
+			,version	: 3
 			,stores		:{
 				keyValue :
 				{
@@ -110,16 +111,28 @@ class DatabaseStore
 
 			transaction.oncomplete = (evt)=>
 			{
-				resolve( evt );
+				//Never Fires
+				if( this.debug )
+					console.log('AddItem('+storeName+' key:'+key+' item:'+JSON.stringify( item )+' Transaction Success');
 			};
 
 			transaction.onerror = (evt)=>
 			{
+				if( this.debug )
+					console.log('AddItem('+storeName+' key:'+key+' item:'+JSON.stringify( item )+' Fails');
+
 				reject( evt );
 			};
 
 			let store = transaction.objectStore( storeName );
-			store.add( item, key );
+			let request = store.add( item, key );
+			request.onsuccess = (evt)=>
+			{
+				if( this.debug );
+				console.log('AddItem('+storeName+' key:'+key+' item:'+JSON.stringify( item )+' Request Success');
+
+				resolve(evt);
+			};
 		});
 	};
 
@@ -171,10 +184,12 @@ class DatabaseStore
 
 			theArgs.forEach((i)=>
 			{
+				if( this.debug )
+					console.log('Deleting '+i );
+
 				let store = transaction.objectStore( i );
 				store.clear();
 			});
-			//transaction.close();
 		});
 	}
 
@@ -194,7 +209,7 @@ class DatabaseStore
 			let queryObject = this._getQueryObject( storeName, transaction, options );
 			let range		= this._getKeyRange( options );
 
-			queryObject.count( range );
+			let request = queryObject.count( range );
 
 			request.onsuccess = ()=>
 			{
@@ -262,20 +277,48 @@ class DatabaseStore
 
 	openCursor(storeName,options, callback )
 	{
-		let transaction = this.database.transaction([ storeName ], 'readwrite' );
-
-		transaction.onerror = (evt)=>
+		return new Promise((resolve,reject)=>
 		{
-			reject( evt );
-		};
+			let transaction = this.database.transaction([ storeName ], 'readwrite' );
 
-		let store		= transaction.objectStore( storeName );
-		let queryObject = this._getQueryObject( storeName, transaction, options );
-		let range		= this._getKeyRange( options );
-		let direction	= this._getOptionsDirection( options );
+			transaction.onerror = (evt)=>
+			{
+				reject( evt );
+			};
 
-		let request = queryObject.openCursor( range ,count );
-		request.onsuccess = callback
+			transaction.onsuccess = ( evt )=>
+			{
+				//if( this.debug )
+				//	console.log('OpenCursor('+storeName+' options:'+JSON.stringify( options )+' Transaction Success');
+
+				//resolve( evt );
+			};
+
+			transaction.oncomplete = ( evt )=>
+			{
+				if( this.debug )
+					console.log('OpenCursor('+storeName+' options:'+JSON.stringify( options )+' Transaction complete');
+			};
+
+			let store		= transaction.objectStore( storeName );
+			let queryObject = this._getQueryObject( storeName, transaction, options );
+			let range		= this._getKeyRange( options );
+			let direction	= this._getOptionsDirection( options );
+			let request = queryObject.openCursor( range );
+			request.onsuccess = (evt)=>
+			{
+				if( evt.target.result )
+				{
+					callback( evt.target.result );
+					evt.target.result.continue();
+				}
+				else
+				{
+					//Maybe call resolve
+					resolve();
+				}
+			};
+		});
 	}
 
 	put( storeName, items )
@@ -312,7 +355,7 @@ class DatabaseStore
 	{
 		return new Promise((resolve,reject)=>
 		{
-			let transaction = this.database.transaction([storeName], 'readonly' );
+			let transaction = this.database.transaction([storeName], 'readwrite' );
 
 			transaction.onerror = (evt)=>
 			{
@@ -322,6 +365,54 @@ class DatabaseStore
 			let store		= transaction.objectStore( storeName );
 
 			let request = store.get( key );
+
+			request.onsuccess = ()=>
+			{
+				resolve( request.result );
+			};
+		});
+	}
+
+	/*
+	 * if options is passed resolves to the number of elements deleted
+	 */
+	removeAll(storeName, options )
+	{
+		if( options )
+		{
+			let count = 0;
+
+			return this.openCursor(storeName, options,(cursor)=>
+			{
+				cursor.delete();
+			})
+			.then(()=>
+			{
+				return count;
+			});
+		}
+
+		return this.clear(storeName);
+	}
+
+	remove(storeName, key )
+	{
+		return new Promise((resolve,reject)=>
+		{
+			let transaction = this.database.transaction([storeName], 'readwrite' );
+
+			transaction.onerror = (evt)=>
+			{
+				reject( evt );
+			};
+			transaction.onsuccess = (evt)=>
+			{
+
+			};
+
+			let store		= transaction.objectStore( storeName );
+
+			let request = store.delete( key );
 
 			request.onsuccess = ()=>
 			{
@@ -373,7 +464,7 @@ class DatabaseStore
 		}
 
 		let isLowerBoundOpen	= '>' in options;
-		let isLowerBound  		= lowerBoundOpen || '>=' in options;
+		let isLowerBound  		= isLowerBoundOpen || '>=' in options;
 
 		let isUpperBoundOpen	= '<' in options;
 		let isUpperBound		= isUpperBoundOpen || '<=' in options;
