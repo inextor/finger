@@ -22,86 +22,50 @@ let s = new DatabaseStore
 		}
 	}
 });
-s.debug = true;
+//s.debug = true;
 
-s.init()
-.then(()=>
+
+async function testThis()
 {
-	return s.clear('user','keyValue');
-})
-.then(()=>
-{
-	return s.addItems('user',
+	let initResponse		= await s.init();
+	let clearResponse		= await s.clear('user','keyValue');
+	let addItemsResponse 	= await s.addItems('user',
 	[
 		{ name:'Nextor', age: 35, curp:'Foooo', tags:['beer','parent'] }
 		,{ name:'Sofi', age: 9, curp:'foooo2', tags:['child'] }
 		,{ name:'Emma', age: 0, curp:'fooo3', tags:['baby','child'] }
-	,])
-})
-.then(()=>
-{
-	return s.getAll('user');
-}).then((users)=>
-{
-	console.log( 'All Users are ', users );
-	return Promise.all
-	([
-		s.getAll('user',{ index: 'tagIndex', '=':'child' })
-		,s.count('user',{ index: 'tagIndex', '=':'child' })
 	]);
-})
-.then((response)=>
-{
-	console.log('Childs are', response[0],'Must have ', response[1], 'Elements' );
+
+	let usersArray1			= await s.getAll('user');
+	let childsOnly			= await s.getAll('user',{index:'tagIndex','=':'child'});
+	let childsOnlyCount		= await s.count('user',{index:'tagIndex','=':'child'});
+
+	if( childsOnly.length !== childsOnlyCount )
+		throw 'getAll or Count fails with options';
+
+	let removedElements			= await s.removeAll('user',{ index: 'age', '<' : 9 });
+	let userEqualOrGreatThan9	= await s.getAll('user');
+
+	console.log('Removed elements count',removedElements, 'It remains',userEqualOrGreatThan9.length, 'Elements' );
+
+	if( removedElements !== 1 )
+		throw 'RemoveAll with options fails';
+
+	let addItemResponse1		= await	s.addItem('keyValue','foo1',{hello:'world'});
+	let addItemResponse2		= await	s.addItem('keyValue','foo2',{bye_bye:'cruel world'});
+	let keyValueItem			= await s.get('keyValue','foo1');
+
+	let allKeyValueItems1		= await s.getAll('keyValue');
+	console.log('Object By key is', keyValueItem );
+	console.log('All items stored in keyValue are', allKeyValueItems1 );
+
+	let removeElementResponse	= await s.remove('keyValue','foo1');
+	let allKeyValueItems2		= await s.getAll('keyValue');
+	console.log('All items stored in keyValue after delete are ', allKeyValueItems2 );
+
+	let responseClear			= await s.clear('user','keyValue');
+	console.log('All the stores are empty');
+}
 
 
-	if( response[0].length !== response[1] )
-	{
-		throw 'GetAll Or Count Fails';
-	}
-
-	return s.removeAll('user',{ index: 'age', '<' : 9 });
-})
-.then(()=>{
-	return s.getAll('user');
-})
-.then((users)=>{
-	console.log('Users were deleted, users with age >=9 years old must remain', users );
-
-	users.forEach(u=>{
-		if( u.age < 9 )
-			throw 'It fails removeAll with conditions';
-	});
-	return s.addItem('keyValue','foo',{hello:'world'});
-})
-.then(()=>
-{
-	console.log('What happend');
-	return s.get('keyValue','foo');
-})
-.then((result)=>
-{
-	console.log('Object By key is', result );
-	return s.remove('keyValue','foo');
-})
-.then(()=>
-{
-	console.log('Foo was deleted');
-	return s.getAll('keyValue');
-})
-.then((keyValueObjects)=>
-{
-	console.log('All the keyValue objects must be an empty array',keyValueObjects );
-	if( keyValueObjects.length !== 0 )
-		throw 'Remove does\'t work';
-
-	return s.clear('user','keyValue');
-})
-.then(()=>
-{
-	console.log('IT finish all the tests');
-})
-.catch((z)=>
-{
-	console.log( z );
-});
+testThis();

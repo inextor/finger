@@ -52,7 +52,9 @@ class DatabaseStore
 
 			DBOpenRequest.onupgradeneeded	 = (event)=>
 			{
-				console.log('creating stores');
+				if( this.debug )
+					console.log('Init creating stores');
+
 				let db = event.target.result;
 				this._createSchema( db );
 			};
@@ -147,7 +149,9 @@ class DatabaseStore
 
 			transaction.oncomplete = (evt)=>
 			{
-				console.log('Transaction Complete');
+				if( this.debug )
+					console.log('AddItems('+storeName+'  items:'+JSON.stringify( items )+' transaction Success');
+
 				resolve( evt );
 			};
 
@@ -226,13 +230,17 @@ class DatabaseStore
 
 			transaction.onerror = (evt)=>
 			{
+				if( this.debug )
+					console.log('GetAll( storeName: ',storeName,' Options:', JSON.stringify( options ), ' transaction error', evt);
+				
 				reject( evt );
 			};
 
 
 			transaction.onsuccess = (evt)=>
 			{
-				console.log('It doesnt success');
+				if( this.debug )
+					console.log('GetAll( storeName: ',storeName,' Options:', JSON.stringify( options ), ' transaction success');
 			};
 
 			let store		= transaction.objectStore( storeName );
@@ -244,7 +252,6 @@ class DatabaseStore
 			let request = queryObject.getAll( range ,count );
 			request.onsuccess = ()=>
 			{
-				console.log('SUccess');
 				resolve( request.result );
 			};
 		});
@@ -288,9 +295,8 @@ class DatabaseStore
 
 			transaction.onsuccess = ( evt )=>
 			{
-				//if( this.debug )
-				//	console.log('OpenCursor('+storeName+' options:'+JSON.stringify( options )+' Transaction Success');
-
+				if( this.debug )
+					console.log('opencursor( storeName: ',storeName,' Options:', JSON.stringify( options ), ' transaction success');
 				//resolve( evt );
 			};
 
@@ -385,10 +391,11 @@ class DatabaseStore
 			return this.openCursor(storeName, options,(cursor)=>
 			{
 				cursor.delete();
+				count++;
 			})
 			.then(()=>
 			{
-				return count;
+				return Promise.resolve( count );
 			});
 		}
 
