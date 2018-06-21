@@ -78,7 +78,9 @@ class DatabaseStore
 			if( db.objectStoreNames.contains( i ) )
 				continue;
 
-			console.log('creating store'+i);
+			if( this.debug )
+				console.log('creating store'+i);
+
 			let keyPath			= 'keyPath' in this.schema.stores[i] ? this.schema.stores[i].keyPath : 'id';
 			let autoincrement	= 'autoincrement' in this.schema.stores[i] ? this.schema.stores[i].autoincrement : true;
 			var store	= db.createObjectStore( i ,{ keyPath: keyPath , autoIncrement: autoincrement } );
@@ -116,6 +118,7 @@ class DatabaseStore
 				//Never Fires
 				if( this.debug )
 					console.log('AddItem('+storeName+' key:'+key+' item:'+JSON.stringify( item )+' Transaction Success');
+				resolve( evt );
 			};
 
 			transaction.onerror = (evt)=>
@@ -126,20 +129,42 @@ class DatabaseStore
 				reject( evt );
 			};
 
-			let store = transaction.objectStore( storeName );
-			let request = store.add( item, key );
-			request.onsuccess = (evt)=>
-			{
-				if( this.debug );
-				console.log('AddItem('+storeName+' key:'+key+' item:'+JSON.stringify( item )+' Request Success');
 
-				resolve(evt);
-			};
+			let store = transaction.objectStore( storeName );
+
+			try
+			{
+				let request = store.add( item, key );
+
+				request.onsuccess = (evt)=>
+				{
+					if( this.debug );
+					console.log('AddItem('+storeName+' key:'+key+' item:'+JSON.stringify( item )+' Request Success');
+
+					resolve(evt);
+				};
+
+				request.onerror = (evt)=>
+				{
+					reject( evt );
+				};
+			}
+			catch(e)
+			{
+				if( this.debug )
+					console.log( e );
+
+				reject( e );
+			}
+
 		});
 	};
 
 	addItems(storeName, items)
 	{
+		if( this.debug )
+			console.log('Adding items', items );
+
 		if( !this.database.objectStoreNames.contains( storeName ) )
 			return Promise.reject( 'Store "'+storeName+' doesn\'t exists');
 
@@ -147,12 +172,18 @@ class DatabaseStore
 		{
 			let transaction = this.database.transaction( [storeName] , 'readwrite' );
 
+			let addedItems	= [];
+
 			transaction.oncomplete = (evt)=>
 			{
 				if( this.debug )
 					console.log('AddItems('+storeName+'  items:'+JSON.stringify( items )+' transaction Success');
 
-				resolve( evt );
+				if( this.debug )
+					console.log( evt );
+
+				//resolve( evt );
+				resolve( addedItems );
 			};
 
 			transaction.onerror = (evt)=>
@@ -162,10 +193,19 @@ class DatabaseStore
 
 			let store = transaction.objectStore( storeName );
 
+			let f = (evt)=>
+			{
+				if( this.debug )
+					console.log('AddItems Request evt', evt );
+				addedItems.push( evt.target.result );
+			};
+
 			items.forEach((k)=>
 			{
-				store.add( k );
+				let request = store.add( k );
+				request.onsuccess = f;
 			});
+
 			//transaction.close(); //I dont know
 		});
 	}
@@ -232,7 +272,7 @@ class DatabaseStore
 			{
 				if( this.debug )
 					console.log('GetAll( storeName: ',storeName,' Options:', JSON.stringify( options ), ' transaction error', evt);
-				
+
 				reject( evt );
 			};
 
@@ -253,6 +293,10 @@ class DatabaseStore
 			request.onsuccess = ()=>
 			{
 				resolve( request.result );
+			};
+			request.onerror = ( evt )=>
+			{
+				reject('Some errror',evt);
 			};
 		});
 	}
