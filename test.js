@@ -22,12 +22,19 @@ let s = new DatabaseStore
 		}
 	}
 });
-//s.debug = true;
+s.debug = true;
 
 
 async function testThis()
 {
+	console.log('FUUU');
 	let initResponse		= await s.init();
+	console.log( 'jejeje' );
+
+	//let z	= await s.addItem('user',null,{ id:null, name:'Pepe', age:10, curp:'92idiao2',tags:['child']});
+
+	//console.log( z );
+
 	let clearResponse		= await s.clear('user','keyValue');
 	let addItemsResponse 	= await s.addItems('user',
 	[
@@ -35,6 +42,8 @@ async function testThis()
 		,{ name:'Sofi', age: 9, curp:'foooo2', tags:['child'] }
 		,{ name:'Emma', age: 0, curp:'fooo3', tags:['baby','child'] }
 	]);
+
+	console.log('Added items ids', addItemsResponse );
 
 	let usersArray1			= await s.getAll('user');
 	let childsOnly			= await s.getAll('user',{index:'tagIndex','=':'child'});
@@ -65,7 +74,13 @@ async function testThis()
 
 	let responseClear			= await s.clear('user','keyValue');
 	console.log('All the stores are empty');
+
 }
 
 
+try{
 testThis();
+}catch(e)
+{
+	console.log( e );
+}
