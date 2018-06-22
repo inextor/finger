@@ -144,7 +144,7 @@ class DatabaseStore
 				{
 					generatedId = evt.target.result;
 
-					if( this.debug );
+					if( this.debug )
 						console.log('AddItem('+storeName+' key:'+key+' item:'+JSON.stringify( item )+' Request Success', evt );
 					//resolve(evt);
 				};
