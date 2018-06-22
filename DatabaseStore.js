@@ -106,6 +106,8 @@ class DatabaseStore
 
 	addItem( storeName, key, item )
 	{
+		let generatedId = null;
+
 		if( !this.database.objectStoreNames.contains( storeName ) )
 			throw 'Store "'+storeName+' doesn\'t exists';
 
@@ -117,8 +119,9 @@ class DatabaseStore
 			{
 				//Never Fires
 				if( this.debug )
-					console.log('AddItem('+storeName+' key:'+key+' item:'+JSON.stringify( item )+' Transaction Success');
-				resolve( evt );
+					console.log('AddItem('+storeName+' key:'+key+' item:'+JSON.stringify( item )+' Transaction complete');
+
+				resolve( generatedId );
 			};
 
 			transaction.onerror = (evt)=>
@@ -134,19 +137,22 @@ class DatabaseStore
 
 			try
 			{
-				let request = store.add( item, key );
+				let request = key ? store.add( item, key ) : store.add( item );
+
 
 				request.onsuccess = (evt)=>
 				{
-					if( this.debug );
-					console.log('AddItem('+storeName+' key:'+key+' item:'+JSON.stringify( item )+' Request Success');
+					generatedId = evt.target.result;
 
-					resolve(evt);
+					if( this.debug );
+						console.log('AddItem('+storeName+' key:'+key+' item:'+JSON.stringify( item )+' Request Success', evt );
+					//resolve(evt);
 				};
 
 				request.onerror = (evt)=>
 				{
-					reject( evt );
+					if( this.debug )
+						console.log('AddItem('+storeName+' key:'+key+' item:'+JSON.stringify( item )+' Request Error ', evt);
 				};
 			}
 			catch(e)
@@ -177,36 +183,47 @@ class DatabaseStore
 			transaction.oncomplete = (evt)=>
 			{
 				if( this.debug )
-					console.log('AddItems('+storeName+'  items:'+JSON.stringify( items )+' transaction Success');
+					console.log('AddItems('+storeName+'  items:'+JSON.stringify( items )+' transaction Complete');
 
-				if( this.debug )
-					console.log( evt );
-
-				//resolve( evt );
 				resolve( addedItems );
 			};
 
 			transaction.onerror = (evt)=>
 			{
+				if( this.debug )
+				{
+					console.log('AddItems('+storeName+'  items:'+JSON.stringify( items )+' transaction Success');
+				}
 				reject( evt );
 			};
 
 			let store = transaction.objectStore( storeName );
 
-			let f = (evt)=>
+			let successEvt = (evt)=>
 			{
 				if( this.debug )
-					console.log('AddItems Request evt', evt );
+					console.log('AddItems '+storeName+' Request Success', evt );
+
 				addedItems.push( evt.target.result );
+			};
+
+			let errorEvt = (evt)=>
+			{
+				if( this.debug )
+					console.log('AddItems '+storeName+' Request Success', evt );
 			};
 
 			items.forEach((k)=>
 			{
+				try{
 				let request = store.add( k );
-				request.onsuccess = f;
+				request.onsuccess = successEvt;
+				request.onerror	= errorEvt;
+				}catch(jj)
+				{
+					console.log( jj );
+				}
 			});
-
-			//transaction.close(); //I dont know
 		});
 	}
 
@@ -371,12 +388,17 @@ class DatabaseStore
 		});
 	}
 
-	put( storeName, items )
+	put( storeName, item )
 	{
-		return this.update(storeName, items );
+
 	}
 
-	update(storeName, items )
+	putItems( storeName, items )
+	{
+		return this.updateItems(storeName, items );
+	}
+
+	updateItems( storeName, items )
 	{
 		return new Promise((resolve,reject)=>
 		{
@@ -384,20 +406,62 @@ class DatabaseStore
 
 			transaction.onerror = (evt)=>
 			{
+				if( this.debug )
+					console.log('PUT '+storeName+' Transactions error', evt );
+
 				reject( evt );
+			};
+
+			transaction.onsuccess = (evt)=>
+			{
+				if( this.debug )
+					console.log('PUT '+storeName+' Transactions success', evt );
+
+				//resolve( results );
+			};
+
+			let results	 = [];
+
+			transaction.oncomplete = (evt)=>
+			{
+				if( this.debug )
+					console.log('PUT '+storeName+' Transactions complete', evt );
+
+				resolve( results );
 			};
 
 			let store		= transaction.objectStore( storeName );
 
-			items.forEach((i)=>
-			{
-				store.put( i );
-			});
 
-			transaction.onsuccess = (evt)=>
+			let evtError	= (evt)=>
 			{
-				resolve( evt );
+				if( this.debug )
+					console.error('PUT '+storeName+' Request error ', evt );
 			};
+
+			let evtSuccess	= (evt)=>
+			{
+				if( this.debug )
+					console.log('PUT '+storeName+' Request Succes',evt.target.result );
+
+				results.push( evt.target.result );
+			};
+
+			for(let i=0;i<items.length;i++)
+			{
+				try
+				{
+					let request			= store.put( items[ i ]);
+					request.onerror		= evtError;
+					request.onsuccess	= evtSuccess;
+				}
+				catch(e)
+				{
+					if( this.debug )
+						console.log('PUT '+storeName+' Exception thrown '+JSON.stringify( i ),e );
+					reject( e );
+				}
+			}
 		});
 	}
 
