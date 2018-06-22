@@ -43,7 +43,19 @@ async function testThis()
 		,{ name:'Emma', age: 0, curp:'fooo3', tags:['baby','child'] }
 	]);
 
-	console.log('Added items ids', addItemsResponse );
+	let z = await s.addItem('user',null,{ id: 1,  name: 'Juan', age: 30, tags:['parent','beer']});
+
+	console.log('Added user with id specified, but no key', z );
+
+	let lk = await s.addItem('user',null,{ name: 'LowKey', age: 30, tags:['parent','beer']});
+
+	console.log('Added items ids', lk );
+
+	try{
+	let uc	= await s.updateItems('user',[{ id:1 ,name:'Juan now is peter', age: 31, tags:['child','milk']}]);
+	console.log('Updating juan', uc );
+	}catch(fua){ console.log( fua ); }
+
 
 	let usersArray1			= await s.getAll('user');
 	let childsOnly			= await s.getAll('user',{index:'tagIndex','=':'child'});
@@ -74,7 +86,6 @@ async function testThis()
 
 	let responseClear			= await s.clear('user','keyValue');
 	console.log('All the stores are empty');
-
 }
 
 
