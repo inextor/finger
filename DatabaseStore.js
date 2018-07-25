@@ -45,8 +45,12 @@ class DatabaseStore
 		return new Promise((resolve,reject)=>
 		{
 			let DBOpenRequest	   = window.indexedDB.open( this.schema.name || 'default', this.schema.version );
+
 			DBOpenRequest.onerror   = ( evt )=>
 			{
+				if( this.debug )
+					console.log( evt )
+
 				reject( evt );
 			};
 
@@ -61,9 +65,7 @@ class DatabaseStore
 
 			DBOpenRequest.onsuccess = (e)=>
 			{
-				this.database = e.target.result;
-				//this.database = DBOpenRequest.result;
-				//this._createSchema( this.database );
+				this.database	= e.target.result;
 				resolve( e );
 			};
 		});
@@ -90,7 +92,10 @@ class DatabaseStore
 
 			this.schema.stores[i].indexes.forEach((index)=>
 			{
-				store.createIndex( index.indexName, index.keyPath, index.objectParameters );
+				if( !store.indexNames.contains( index.indexName ) )
+				{
+					store.createIndex( index.indexName, index.keyPath, index.objectParameters );
+				}
 			});
 		}
 	}
@@ -307,6 +312,7 @@ class DatabaseStore
 			let count		= this._getOptionsCount( options );
 
 			let request = queryObject.getAll( range ,count );
+
 			request.onsuccess = ()=>
 			{
 				resolve( request.result );
@@ -343,7 +349,57 @@ class DatabaseStore
 		});
 	}
 
-	openCursor(storeName,options, callback )
+	getByKey(storeName, orderedKeyList)
+	{
+		let transaction = this.database.transaction([storeName], 'readonly' );
+
+		transaction.onerror = (evt)=>
+		{
+			reject( evt );
+		};
+
+		let store		= transaction.objectStore( storeName );
+
+	    var i = 0;
+	    var cursorReq = store.openCursor();
+
+	    cursorReq.onsuccess = (event)=>
+		{
+	        var cursor = event.target.result;
+
+	        if (!cursor)
+			{
+				resolve( items ); return;
+			}
+
+	        var key = cursor.key;
+
+	        while (key > orderedKeyList[i])
+			{
+	            // The cursor has passed beyond this key. Check next.
+	            ++i;
+
+	            if (i === orderedKeyList.length) {
+	                // There is no next. Stop searching.
+					resolve( items );
+	                return;
+	            }
+	        }
+
+	        if (key === orderedKeyList[i]) {
+	            // The current cursor value should be included and we should continue
+	            // a single step in case next item has the same key or possibly our
+	            // next key in orderedKeyList.
+	            onfound(cursor.value);
+	            cursor.continue();
+	        } else {
+	            // cursor.key not yet at orderedKeyList[i]. Forward cursor to the next key to hunt for.
+	            cursor.continue(orderedKeyList[i]);
+	        }
+	    };
+	}
+
+	customFilter(storeName, options, callbackFilter )
 	{
 		return new Promise((resolve,reject)=>
 		{
@@ -372,17 +428,21 @@ class DatabaseStore
 			let range		= this._getKeyRange( options );
 			let direction	= this._getOptionsDirection( options );
 			let request = queryObject.openCursor( range );
+			let results		= [];
+
 			request.onsuccess = (evt)=>
 			{
 				if( evt.target.result )
 				{
-					callback( evt.target.result );
+					if( callbackFilter( evt.target.result ) )
+						results.push( evt.target.result );
+
 					evt.target.result.continue();
 				}
 				else
 				{
 					//Maybe call resolve
-					resolve();
+					resolve( this.results );
 				}
 			};
 		});
@@ -390,7 +450,7 @@ class DatabaseStore
 
 	put( storeName, item )
 	{
-
+		return this.putItems(storeName, [item ] );
 	}
 
 	putItems( storeName, items )
@@ -539,7 +599,7 @@ class DatabaseStore
 	_getOptionsCount( options )
 	{
 		if( options && 'count' in options )
-			return options[ count ];
+			return options.count
 
 		return null;
 	}
