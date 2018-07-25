@@ -529,6 +529,11 @@ class DatabaseStore
 	{
 		return new Promise((resolve,reject)=>
 		{
+			if( this.debug )
+			{
+				console.log("Store name", storeName );
+			}
+
 			let transaction = this.database.transaction([storeName], 'readwrite' );
 
 			transaction.onerror = (evt)=>
