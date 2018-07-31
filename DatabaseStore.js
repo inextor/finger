@@ -54,13 +54,13 @@ class DatabaseStore
 				reject( evt );
 			};
 
-			DBOpenRequest.onupgradeneeded	 = (event)=>
+			DBOpenRequest.onupgradeneeded	 = (evt)=>
 			{
 				if( this.debug )
 					console.log('Init creating stores');
 
-				let db = event.target.result;
-				this._createSchema( db );
+				let db = evt.target.result;
+				this._createSchema( evt.target.transaction, db );
 			};
 
 			DBOpenRequest.onsuccess = (e)=>
@@ -71,33 +71,68 @@ class DatabaseStore
 		});
 	}
 
-	_createSchema( db )
+	_createSchema( transaction, db )
 	{
 		let stores 	= db.objectStoreNames;
 
-		for(let i in this.schema.stores )
+		for(let storeName in this.schema.stores )
 		{
-			if( db.objectStoreNames.contains( i ) )
-				continue;
+			let store = null;
 
-			if( this.debug )
-				console.log('creating store'+i);
-
-			let keyPath			= 'keyPath' in this.schema.stores[i] ? this.schema.stores[i].keyPath : 'id';
-			let autoincrement	= 'autoincrement' in this.schema.stores[i] ? this.schema.stores[i].autoincrement : true;
-			var store	= db.createObjectStore( i ,{ keyPath: keyPath , autoIncrement: autoincrement } );
-
-			if( ! ('indexes' in this.schema.stores[i]) )
-				continue;
-
-			this.schema.stores[i].indexes.forEach((index)=>
+			if( ! ('indexes' in this.schema.stores[ storeName ]) )
 			{
-				if( !store.indexNames.contains( index.indexName ) )
+				this.schema.stores[ storeName ].indexes = [];
+			}
+
+			if( !db.objectStoreNames.contains( storeName ) )
+			{
+				if( this.debug )
+					console.log('creating store'+storeName);
+
+				let keyPath			= 'keyPath' in this.schema.stores[ storeName ] ? this.schema.stores[ storeName ].keyPath : 'id';
+				let autoincrement	= 'autoincrement' in this.schema.stores[storeName] ? this.schema.stores[storeName].autoincrement : true;
+				store	= db.createObjectStore( storeName ,{ keyPath: keyPath , autoIncrement: autoincrement } );
+
+				this._createIndexForStore
+				(
+					store
+					,this.schema.stores[ storeName ].indexes
+				);
+			}
+			else
+			{
+				let store = transaction.objectStore( storeName );
+
+				let toDelete = [];
+
+				for( let j=0;j<store.indexNames.length;j++)
 				{
-					store.createIndex( index.indexName, index.keyPath, index.objectParameters );
+					if( ! this.schema.stores[ storeName ].indexes.some( z=> z.indexName == store.indexNames.item( j )) )
+						toDelete.push( store.indexNames.item( j ) );
 				}
-			});
+
+				while( toDelete.length )
+				{
+					let z = toDelete.pop();
+					store.deleteIndex( z );
+				}
+
+				this._createIndexForStore
+				(
+					store
+					,this.schema.stores[ storeName ].indexes
+				);
+			}
 		}
+	}
+
+	_createIndexForStore( store, indexesArray )
+	{
+		indexesArray.forEach((index)=>
+		{
+			if( !store.indexNames.contains( index.indexName ) )
+				store.createIndex( index.indexName, index.keyPath, index.objectParameters );
+		});
 	}
 
 
