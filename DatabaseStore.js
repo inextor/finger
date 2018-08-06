@@ -29,7 +29,7 @@ class DatabaseStore
 	{
 		return {
 			name		: 'default'
-			,version	: 3
+			,version	: 1
 			,stores		:{
 				keyValue :
 				{
@@ -37,7 +37,7 @@ class DatabaseStore
 					,autoIncrement : false
 				}
 			}
-		}
+		};
 	}
 
 	init()
@@ -569,7 +569,12 @@ class DatabaseStore
 				console.log("Store name", storeName );
 			}
 
-			let transaction = this.database.transaction([storeName], 'readwrite' );
+			let transaction = this.database.transaction([storeName], 'readonly' );
+
+			transaction.onsuccess = (evt)=>
+			{
+				resolve( request.result );
+			});
 
 			transaction.onerror = (evt)=>
 			{
