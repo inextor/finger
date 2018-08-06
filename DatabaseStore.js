@@ -574,7 +574,7 @@ class DatabaseStore
 			transaction.onsuccess = (evt)=>
 			{
 				resolve( request.result );
-			});
+			};
 
 			transaction.onerror = (evt)=>
 			{
