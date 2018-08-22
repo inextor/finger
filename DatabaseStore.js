@@ -692,8 +692,8 @@ class DatabaseStore
 
 		if( isLowerBound && isUpperBound )
 		{
-			let lowerBound	= options[ isLowerBoundOpen ? '>=' : '>' ];
-			let upperBound	= options[ isUpperBoundOpen ? '<=' : '<' ];
+			let lowerBound	= options[ isLowerBoundOpen ?  '>':'>='];
+			let upperBound	= options[ isUpperBoundOpen ?  '<':'<='];
 			return IDBKeyRange.bound( lowerBound, upperBound, isLowerBoundOpen, isUpperBoundOpen );
 		}
 
