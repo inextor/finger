@@ -49,7 +49,7 @@ class DatabaseStore
 			DBOpenRequest.onerror   = ( evt )=>
 			{
 				if( this.debug )
-					console.log( evt )
+					console.log( evt );
 
 				reject( evt );
 			};
@@ -386,52 +386,57 @@ class DatabaseStore
 
 	getByKey(storeName, orderedKeyList)
 	{
-		let transaction = this.database.transaction([storeName], 'readonly' );
-
-		transaction.onerror = (evt)=>
+		return new Promise((resolve,reject)=>
 		{
-			reject( evt );
-		};
+			let transaction = this.database.transaction([storeName], 'readonly' );
 
-		let store		= transaction.objectStore( storeName );
-
-	    var i = 0;
-	    var cursorReq = store.openCursor();
-
-	    cursorReq.onsuccess = (event)=>
-		{
-	        var cursor = event.target.result;
-
-	        if (!cursor)
+			transaction.onerror = (evt)=>
 			{
-				resolve( items ); return;
-			}
+				reject( evt );
+			};
 
-	        var key = cursor.key;
+			let store		= transaction.objectStore( storeName );
+			let items		= [];
 
-	        while (key > orderedKeyList[i])
+	    	var i = 0;
+	    	var cursorReq = store.openCursor();
+
+	    	cursorReq.onsuccess = (event)=>
 			{
-	            // The cursor has passed beyond this key. Check next.
-	            ++i;
+	    	    var cursor = event.target.result;
 
-	            if (i === orderedKeyList.length) {
-	                // There is no next. Stop searching.
-					resolve( items );
-	                return;
-	            }
-	        }
+	    	    if (!cursor)
+				{
+					resolve( items ); return;
+				}
 
-	        if (key === orderedKeyList[i]) {
-	            // The current cursor value should be included and we should continue
-	            // a single step in case next item has the same key or possibly our
-	            // next key in orderedKeyList.
-	            onfound(cursor.value);
-	            cursor.continue();
-	        } else {
-	            // cursor.key not yet at orderedKeyList[i]. Forward cursor to the next key to hunt for.
-	            cursor.continue(orderedKeyList[i]);
-	        }
-	    };
+	    	    var key = cursor.key;
+
+	    	    while (key > orderedKeyList[i])
+				{
+	    	        // The cursor has passed beyond this key. Check next.
+	    	        ++i;
+
+	    	        if (i === orderedKeyList.length) {
+	    	            // There is no next. Stop searching.
+						resolve( items );
+	    	            return;
+	    	        }
+	    	    }
+
+	    	    if (key === orderedKeyList[i]) {
+	    	        // The current cursor value should be included and we should continue
+	    	        // a single step in case next item has the same key or possibly our
+	    	        // next key in orderedKeyList.
+	    	        //onfound(cursor.value);
+					items.push( cursor.value );
+	    	        cursor.continue();
+	    	    } else {
+	    	        // cursor.key not yet at orderedKeyList[i]. Forward cursor to the next key to hunt for.
+	    	        cursor.continue(orderedKeyList[i]);
+	    	    }
+	    	};
+		});
 	}
 
 	customFilter(storeName, options, callbackFilter )
