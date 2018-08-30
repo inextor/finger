@@ -23,6 +23,7 @@ class DatabaseStore
 	{
 		this.schema = schema;
 		this.debug	= false;
+		this.database = null;
 	}
 
 	static getDefaultSchema()
@@ -354,7 +355,9 @@ class DatabaseStore
 			};
 			request.onerror = ( evt )=>
 			{
-				reject('Some errror',evt);
+				let msg = 'msg' in evt ? evt['msg'] : evt;
+				if( 'msg' in evt )
+				reject('Some errror '+msg );
 			};
 		});
 	}
@@ -482,7 +485,7 @@ class DatabaseStore
 				else
 				{
 					//Maybe call resolve
-					resolve( this.results );
+					resolve( results );
 				}
 			};
 		});
@@ -600,25 +603,21 @@ class DatabaseStore
 	/*
 	 * if options is passed resolves to the number of elements deleted
 	 */
-	removeAll(storeName, options )
-	{
-		if( options )
-		{
-			let count = 0;
+	//removeAll(storeName, options )
+	//{
+	//	return new Promise((resolve,reject)=>
+	//	{
+	//		let count = 0;
 
-			return this.openCursor(storeName, options,(cursor)=>
-			{
-				cursor.delete();
-				count++;
-			})
-			.then(()=>
-			{
-				return Promise.resolve( count );
-			});
-		}
-
-		return this.clear(storeName);
-	}
+	//		let transaction = this.database.transaction([storeName], 'readonly' );
+	//		let store = transaction.objectStore( storeName );
+	//		var request = store.clear();
+	//		request.onsuccess = ()=>
+	//		{
+	//			resolve( request.result );
+	//		});
+	//	});
+	//}
 
 	remove(storeName, key )
 	{
