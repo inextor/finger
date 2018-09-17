@@ -347,12 +347,15 @@ class DatabaseStore
 			let range		= this._getKeyRange( options );
 			let count		= this._getOptionsCount( options );
 
-			let request = queryObject.getAll( range ,count );
+			let request  = ( range == null && count == 0 )
+                  ? queryObject.getAll()
+                  : queryObject.getAll( range, count );
 
 			request.onsuccess = ()=>
 			{
 				resolve( request.result );
 			};
+
 			request.onerror = ( evt )=>
 			{
 				let msg = 'msg' in evt ? evt['msg'] : evt;
