@@ -268,7 +268,7 @@ class DatabaseStore
 		});
 	}
 
-    clear(...theArgs)
+	clear(...theArgs)
 	{
 		//let arr = theArgs.length == 1 && Array.isArray( theArgs ) ? theArgs[0] : theArgs;
 		return new Promise((resolve,reject)=>
@@ -296,7 +296,7 @@ class DatabaseStore
 	}
 
 
-    count(storeName, options)
+	count(storeName, options)
 	{
 		return new Promise((resolve,reject)=>
 		{
@@ -320,7 +320,7 @@ class DatabaseStore
 		});
 	}
 
-    getAll(storeName, options )
+	getAll(storeName, options )
 	{
 		return new Promise((resolve,reject)=>
 		{
@@ -348,8 +348,8 @@ class DatabaseStore
 			let count		= this._getOptionsCount( options );
 
 			let request  = ( range == null && count == 0 )
-                  ? queryObject.getAll()
-                  : queryObject.getAll( range, count );
+				  ? queryObject.getAll()
+				  : queryObject.getAll( range, count );
 
 			request.onsuccess = ()=>
 			{
@@ -365,7 +365,7 @@ class DatabaseStore
 		});
 	}
 
-    getAllKeys(storeName, options )
+	getAllKeys(storeName, options )
 	{
 		return new Promise((resolve,reject)=>
 		{
@@ -409,44 +409,44 @@ class DatabaseStore
 			let store		= transaction.objectStore( storeName );
 			let items		= [];
 
-	    	var i = 0;
-	    	var cursorReq = store.openCursor();
+			var i = 0;
+			var cursorReq = store.openCursor();
 
-	    	cursorReq.onsuccess = (event)=>
+			cursorReq.onsuccess = (event)=>
 			{
-	    	    var cursor = event.target.result;
+				var cursor = event.target.result;
 
-	    	    if (!cursor)
+				if (!cursor)
 				{
 					resolve( items ); return;
 				}
 
-	    	    var key = cursor.key;
+				var key = cursor.key;
 
-	    	    while (key > orderedKeyList[i])
+				while (key > orderedKeyList[i])
 				{
-	    	        // The cursor has passed beyond this key. Check next.
-	    	        ++i;
+					// The cursor has passed beyond this key. Check next.
+					++i;
 
-	    	        if (i === orderedKeyList.length) {
-	    	            // There is no next. Stop searching.
+					if (i === orderedKeyList.length) {
+						// There is no next. Stop searching.
 						resolve( items );
-	    	            return;
-	    	        }
-	    	    }
+						return;
+					}
+				}
 
-	    	    if (key === orderedKeyList[i]) {
-	    	        // The current cursor value should be included and we should continue
-	    	        // a single step in case next item has the same key or possibly our
-	    	        // next key in orderedKeyList.
-	    	        //onfound(cursor.value);
+				if (key === orderedKeyList[i]) {
+					// The current cursor value should be included and we should continue
+					// a single step in case next item has the same key or possibly our
+					// next key in orderedKeyList.
+					//onfound(cursor.value);
 					items.push( cursor.value );
-	    	        cursor.continue();
-	    	    } else {
-	    	        // cursor.key not yet at orderedKeyList[i]. Forward cursor to the next key to hunt for.
-	    	        cursor.continue(orderedKeyList[i]);
-	    	    }
-	    	};
+					cursor.continue();
+				} else {
+					// cursor.key not yet at orderedKeyList[i]. Forward cursor to the next key to hunt for.
+					cursor.continue(orderedKeyList[i]);
+				}
+			};
 		});
 	}
 
@@ -576,7 +576,7 @@ class DatabaseStore
 		});
 	}
 
-    get(storeName, key )
+	get(storeName, key )
 	{
 		return new Promise((resolve,reject)=>
 		{
@@ -608,43 +608,47 @@ class DatabaseStore
 		});
 	}
 
+
+	/*
+	 * if options is passed resolves to the number of elements deleted
+	 */
 	deleteByKeyIds(storeName, arrayOfKeyIds )
 	{
-		return new Promise((resolve,reject)=>
+		let total = 0 ;
+
+		return this.count( storeName,{})
+		.then((count)=>
 		{
-			let transaction = this.database.transaction([storeName], 'readwrite' );
-			let store = transaction.objectStore( storeName );
-
-			let success = 0;
-			let errors	= 0;
-
-			let rsl = (evt)=>
+			total = count;
+			return new Promise((resolve,reject)=>
 			{
-				success++;
-			};
+				let transaction = this.database.transaction([storeName], 'readwrite' );
+				let store = transaction.objectStore( storeName );
 
-			let rel	= (evt)=>
-			{
-				errors++;
-			};
+				transaction.oncomplete = (evt)=>
+				{
+					resolve( evt );
+				};
 
-			transaction.oncomplete = (evt)=>
-			{
-				resolve({ success: success, errors: errors });
-			};
+				transaction.onerror = (evt)=>
+				{
+					reject( evt );
+				};
 
-			transaction.onerror = (evt)=>
-			{
-				reject( evt );
-			};
-
-			arrayOfKeyIds.forEach((key)=>
-			{
-				console.log( 'key', key );
-				let request = store.delete( key );
-				request.onsuccess = rsl;
-				request.onerror	= rsl;
+				arrayOfKeyIds.forEach((key)=>
+				{
+					console.log( 'key', key );
+					let request = store.delete( key );
+				});
 			});
+		})
+		.then(()=>
+		{
+			return this.count( storeName, {} );
+		})
+		.then((count)=>
+		{
+			return Promise.resolve( total - count );
 		});
 	}
 	/*
