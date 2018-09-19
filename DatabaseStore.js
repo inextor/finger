@@ -383,9 +383,14 @@ class DatabaseStore
 
 			let request = queryObject.getAllKeys( range, count );
 
-			transaction.onsuccess = ()=>
+			request.onsuccess = ()=>
 			{
 				resolve( request.result );
+			};
+
+			transaction.onsuccess = ()=>
+			{
+//				resolve( request.result );
 			};
 		});
 	}
@@ -603,24 +608,113 @@ class DatabaseStore
 		});
 	}
 
+	deleteByKeyIds(storeName, arrayOfKeyIds )
+	{
+		return new Promise((resolve,reject)=>
+		{
+			let transaction = this.database.transaction([storeName], 'readwrite' );
+			let store = transaction.objectStore( storeName );
+
+			let success = 0;
+			let errors	= 0;
+
+			let rsl = (evt)=>
+			{
+				success++;
+			};
+
+			let rel	= (evt)=>
+			{
+				errors++;
+			};
+
+			transaction.oncomplete = (evt)=>
+			{
+				resolve({ success: success, errors: errors });
+			};
+
+			transaction.onerror = (evt)=>
+			{
+				reject( evt );
+			};
+
+			arrayOfKeyIds.forEach((key)=>
+			{
+				console.log( 'key', key );
+				let request = store.delete( key );
+				request.onsuccess = rsl;
+				request.onerror	= rsl;
+			});
+		});
+	}
 	/*
 	 * if options is passed resolves to the number of elements deleted
 	 */
-	//removeAll(storeName, options )
-	//{
-	//	return new Promise((resolve,reject)=>
-	//	{
-	//		let count = 0;
+	removeAll(storeName, options )
+	{
+		if( this.debug )
+			console.log('NEW');
+		let total = 0;
 
-	//		let transaction = this.database.transaction([storeName], 'readonly' );
-	//		let store = transaction.objectStore( storeName );
-	//		var request = store.clear();
-	//		request.onsuccess = ()=>
-	//		{
-	//			resolve( request.result );
-	//		});
-	//	});
-	//}
+		return this.count( storeName, options )
+		.then((count)=>
+		{
+			total = count;
+
+			if( this.debug )
+				console.log('RemoveAll to remove', count );
+
+			if( count  === 0 )
+				return Promise.resolve( 0 );
+
+			return new Promise((resolve,reject)=>
+			{
+				let count = 0;
+
+				let transaction = this.database.transaction([storeName], 'readwrite' );
+				let store = transaction.objectStore( storeName );
+				var request = store.clear();
+
+				transaction.oncomplete = (evt)=>
+				{
+					if( this.debug )
+						console.log("RemoveAll complete", evt );
+					resolve( 1 );
+				};
+
+				transaction.onerror = (evt)=>
+				{
+					if( this.debug )
+						console.log("RemoveAll complete", evt );
+
+					reject( evt );
+				};
+
+				request.onsuccess = (evt)=>
+				{
+					if( this.debug )
+						console.log("RemoveAll", evt, request  );
+				};
+			});
+		})
+		.then((x)=>
+		{
+			if( x === 0 )
+				return Promise.resolve( 0 );
+
+			if( this.debug )
+				console.log('RemoveAll MAKING A COUNT');
+
+			return this.count( storeName, options );
+		})
+		.then((count)=>
+		{
+			if( this.debug )
+				console.log("REMOVEALL rech the end", count );
+
+			return Promise.resolve( total - count );
+		});
+	}
 
 	remove(storeName, key )
 	{
@@ -632,19 +726,14 @@ class DatabaseStore
 			{
 				reject( evt );
 			};
-			transaction.onsuccess = (evt)=>
+			transaction.oncomplete = (evt)=>
 			{
-
+				resolve( evt );
 			};
 
 			let store		= transaction.objectStore( storeName );
 
 			let request = store.delete( key );
-
-			request.onsuccess = ()=>
-			{
-				resolve( request.result );
-			};
 		});
 	}
 

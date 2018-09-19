@@ -1,48 +1,51 @@
 
-let s = new DatabaseStore
-({
-	name		: "users"
-	,version	: 1
-	,stores		:{
-		user: {
-			keyPath	: 'id'
-			,autoIncrement: true
-			,indexes	:
-			[
-				{ indexName: "name", keyPath:"name", objectParameters: { unique : false, multiEntry: false, locale: 'auto'  } }
-				,{ indexName: "age", keyPath:"age", objectParameters: { unique : false, multiEntry: false, locale: 'auto'  } }
-				,{ indexName: "curp", keyPath:"curp", objectParameters: { unique : false, multiEntry: false, locale: 'auto'  } }
-				,{ indexName: "tagIndex", keyPath:"tags", objectParameters: { unique : false, multiEntry: true , locale: 'auto'  } } //age i thing it must be a array
-			]
-		}
-		,keyValue :
-		{
-			keyPath : null
-			,autoIncrement : false
-		}
-	}
-});
-s.debug = true;
-
 
 async function testThis()
 {
+	let s = new DatabaseStore
+	({
+		name		: "users"
+		,version	: 1
+		,stores		:{
+			user: {
+				keyPath	: 'id'
+				,autoIncrement: true
+				,indexes	:
+				[
+					{ indexName: "name", keyPath:"name", objectParameters: { unique : false, multiEntry: false, locale: 'auto'  } }
+					,{ indexName: "age", keyPath:"age", objectParameters: { unique : false, multiEntry: false, locale: 'auto'  } }
+					,{ indexName: "curp", keyPath:"curp", objectParameters: { unique : false, multiEntry: false, locale: 'auto'  } }
+					,{ indexName: "tagIndex", keyPath:"tags", objectParameters: { unique : false, multiEntry: true , locale: 'auto'  } } //age i thing it must be a array
+				]
+			}
+			,keyValue :
+			{
+				keyPath : null
+				,autoIncrement : false
+			}
+		}
+	});
+
+	s.debug = true;
+
 	console.log('FUUU');
 	let initResponse		= await s.init();
 	console.log( 'jejeje' );
 
 	//let z	= await s.addItem('user',null,{ id:null, name:'Pepe', age:10, curp:'92idiao2',tags:['child']});
 
-	//console.log( z );
-
-	let clearResponse		= await s.clear('user','keyValue');
-	let addItemsResponse 	= await s.addItems('user',
-	[
-		{ name:'Nextor', age: 35, curp:'Foooo', tags:['beer','parent'] }
+	let users	= [{ name:'Nextor', age: 35, curp:'Foooo', tags:['beer','parent'] }
 		,{ name:'Sofi', age: 9, curp:'foooo2', tags:['child'] }
 		,{ name:'Emma', age: 0, curp:'fooo3', tags:['baby','child'] }
-	]);
+		,{ name:'Cesar', age: 0, curp:'fooo3', tags:['baby','child'] }
+		,{ name:'Juan', age: 0, curp:'fooo3', tags:['baby','child'] }
+		,{ name:'Maria', age: 0, curp:'fooo3', tags:['baby','child'] }
+		,{ name:'Pedro', age: 0, curp:'fooo3', tags:['baby','child'] }
+	];
 
+
+	let clearResponse		= await s.clear('user','keyValue');
+	let addItemsResponse 	= await s.addItems('user', users );
 	let z = await s.addItem('user',null,{ id: 1,  name: 'Juan', age: 30, tags:['parent','beer']});
 
 	console.log('Added user with id specified, but no key', z );
@@ -69,7 +72,8 @@ async function testThis()
 
 	console.log('Removed elements count',removedElements, 'It remains',userEqualOrGreatThan9.length, 'Elements' );
 
-	if( removedElements !== 1 )
+	console.log( typeof removedElements );
+	if( removedElements !== 5 )
 		throw 'RemoveAll with options fails';
 
 	let addItemResponse1		= await	s.addItem('keyValue','foo1',{hello:'world'});
@@ -86,12 +90,24 @@ async function testThis()
 
 	let responseClear			= await s.clear('user','keyValue');
 	console.log('All the stores are empty');
+
+	let responseAddAll = await s.addItems('user', users );
+	console.log( responseAddAll );
+
+	let removed = await s.deleteByKeyIds('user', responseAddAll );
+
+	if( responseAddAll.length !== removed.success )
+	{
+		throw 'Fails on deleteByKeyIds';
+	}
 }
 
-
-try{
-testThis();
-}catch(e)
+window.addEventListener('load',()=>
 {
-	console.log( e );
-}
+	try{
+	testThis();
+	}catch(e)
+	{
+		console.log( e );
+	}
+});
