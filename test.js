@@ -96,7 +96,7 @@ async function testThis()
 
 	let removed = await s.deleteByKeyIds('user', responseAddAll );
 
-	if( responseAddAll.length !== removed.success )
+	if( responseAddAll.length !== removed )
 	{
 		throw 'Fails on deleteByKeyIds';
 	}
