@@ -657,7 +657,8 @@ class DatabaseStore
 	removeAll(storeName, options )
 	{
 		if( this.debug )
-			console.log('NEW');
+			console.log('RemoveAll Start');
+
 		let total = 0;
 
 		return this.count( storeName, options )
@@ -676,8 +677,6 @@ class DatabaseStore
 				let count = 0;
 
 				let transaction = this.database.transaction([storeName], 'readwrite' );
-				let store = transaction.objectStore( storeName );
-				var request = store.clear();
 
 				transaction.oncomplete = (evt)=>
 				{
@@ -694,10 +693,26 @@ class DatabaseStore
 					reject( evt );
 				};
 
+				let store		= transaction.objectStore( storeName );
+				let queryObject = this._getQueryObject( storeName, transaction, options );
+				let range		= this._getKeyRange( options );
+				let direction	= this._getOptionsDirection( options );
+				let request 	= queryObject.openCursor( range );
+				let results		= [];
+
+				request.onerror = (evt)=>
+				{
+					console.log('cursor error',evt);
+				};
 				request.onsuccess = (evt)=>
 				{
-					if( this.debug )
-						console.log("RemoveAll", evt, request  );
+					let cursor = evt.target.result;
+
+					if( cursor )
+					{
+						cursor.delete();
+						cursor.continue();
+					}
 				};
 			});
 		})
@@ -719,6 +734,7 @@ class DatabaseStore
 			return Promise.resolve( total - count );
 		});
 	}
+
 
 	remove(storeName, key )
 	{
