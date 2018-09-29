@@ -40,7 +40,7 @@ async function testThis()
 		,{ name:'Cesar', age: 0, curp:'fooo3', tags:['baby','child'] }
 		,{ name:'Juan', age: 0, curp:'fooo3', tags:['baby','child'] }
 		,{ name:'Maria', age: 0, curp:'fooo3', tags:['baby','child'] }
-		,{ name:'Pedro', age: 0, curp:'fooo3', tags:['baby','child'] }
+		,{ 'id': 120, name:'Pedro', age: 0, curp:'fooo3', tags:['baby','child'] }
 	];
 
 
@@ -100,6 +100,15 @@ async function testThis()
 	{
 		throw 'Fails on deleteByKeyIds';
 	}
+
+	let addAllTestRemoveAll = await s.addItems('user', users );
+	console.log('Removing al id>150');
+	let removeAllReponse = await s.removeAll( 'user', { '<=': 150 });
+
+	console.log('Items removed ',removeAllReponse );
+	removeAllReponse = await s.removeAll( 'user', { '>=': 150 });
+	console.log('Items removed ',removeAllReponse );
+
 }
 
 window.addEventListener('load',()=>
