@@ -60,6 +60,16 @@ async function testThis()
 	}catch(fua){ console.log( fua ); }
 
 
+	try
+	{
+		let databaseResume = await s.getDatabaseResume();
+		console.log('Resume', databaseResume );
+	}
+	catch(fua2)
+	{
+		console.log('Fua2 error' ,fua2 );
+	}
+
 	let usersArray1			= await s.getAll('user');
 	let childsOnly			= await s.getAll('user',{index:'tagIndex','=':'child'});
 	let childsOnlyCount		= await s.count('user',{index:'tagIndex','=':'child'});

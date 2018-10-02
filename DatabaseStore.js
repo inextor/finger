@@ -304,6 +304,9 @@ class DatabaseStore
 
 			transaction.onerror = (evt)=>
 			{
+				if( this.debug )
+					console.log('Error for '+storeName+' '+JSON.stringify( options ), evt );
+
 				reject( evt );
 			};
 
@@ -772,6 +775,7 @@ class DatabaseStore
 
 		return "next"
 	}
+
 	_getQueryObject( storeName ,transaction ,options )
 	{
 		let store		= transaction.objectStore( storeName );
@@ -826,5 +830,72 @@ class DatabaseStore
 		}
 
 		return null;
+	}
+
+	getAllIndexesCounts( storeName )
+	{
+		let result = {};
+		let transaction = this.database.transaction([storeName], 'readonly' );
+
+		transaction.onerror = (evt)=>
+		{
+			reject( evt );
+		};
+
+		let store		= transaction.objectStore( storeName );
+
+		let names = Array.from( store.indexNames );
+
+		names.forEach( i =>
+		{
+			result[ i ] = this.count(storeName,{ index: i });
+		});
+
+		return PromiseUtils.all( result );
+	}
+
+	getDatabaseResume()
+	{
+		let indexCounts	= {};
+		let storeCounts = {};
+
+		let names = Array.from( this.database.objectStoreNames );
+
+		names.forEach((name)=>
+		{
+			indexCounts[ name ] = this.getAllIndexesCounts( name );
+			storeCounts[ name ] = this.count(name,{});
+		});
+
+		return PromiseUtils.all
+		({
+			 storeCounts: PromiseUtils.all( storeCounts )
+			,indexCounts: PromiseUtils.all( indexCounts )
+		})
+		.then(( allCounts )=>
+		{
+			let result = [];
+			for(let i in allCounts.storeCounts )
+			{
+				let item =
+				{
+					name: i
+					,total: allCounts.storeCounts[ i ]
+					,indexes: []
+				};
+
+				for(let j in allCounts.indexCounts[ i ] )
+				{
+					item.indexes.push
+					({
+						name : j
+						,count : allCounts.indexCounts[ i ][ j ]
+					});
+				}
+
+				result.push( item );
+			}
+			return Promise.resolve( result );
+		});
 	}
 }
