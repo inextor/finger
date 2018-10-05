@@ -837,11 +837,6 @@ class DatabaseStore
 		let result = {};
 		let transaction = this.database.transaction([storeName], 'readonly' );
 
-		transaction.onerror = (evt)=>
-		{
-			reject( evt );
-		};
-
 		let store		= transaction.objectStore( storeName );
 
 		let names = Array.from( store.indexNames );
