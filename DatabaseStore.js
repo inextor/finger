@@ -132,7 +132,7 @@ class DatabaseStore
 		{
 			if( !(storeName in this.schema.stores) )
 			{
-				db.deleteteObjectStore( storeName );
+				db.deleteObjectStore( storeName );
 			}
 		});
 	}

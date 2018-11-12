@@ -5,7 +5,7 @@ async function testThis()
 	let s = new DatabaseStore
 	({
 		name		: "users"
-		,version	: 1
+		,version	: 4
 		,stores		:{
 			user: {
 				keyPath	: 'id'
@@ -18,6 +18,11 @@ async function testThis()
 					,{ indexName: "tagIndex", keyPath:"tags", objectParameters: { unique : false, multiEntry: true , locale: 'auto'  } } //age i thing it must be a array
 				]
 			}
+			//,foo:
+			//{
+			//	keyPath	: 'id'
+			//	,autoIncrement: true
+			//}
 			,keyValue :
 			{
 				keyPath : null
