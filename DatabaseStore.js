@@ -125,6 +125,16 @@ class DatabaseStore
 				);
 			}
 		}
+
+		let dbStoreNames = Array.from( db.objectStoreNames );
+
+		dbStoreNames.forEach((storeName)=>
+		{
+			if( !(storeName in this.schema.stores) )
+			{
+				db.deleteteObjectStore( storeName );
+			}
+		});
 	}
 
 	_createIndexForStore( store, indexesArray )
@@ -257,12 +267,13 @@ class DatabaseStore
 			items.forEach((k)=>
 			{
 				try{
-				let request = store.add( k );
-				request.onsuccess = successEvt;
-				request.onerror	= errorEvt;
-				}catch(jj)
+					let request = store.add( k );
+					request.onsuccess = successEvt;
+					request.onerror	= errorEvt;
+				}
+				catch(jj)
 				{
-					console.log( jj );
+					console.error( jj );
 				}
 			});
 		});
@@ -640,7 +651,6 @@ class DatabaseStore
 
 				arrayOfKeyIds.forEach((key)=>
 				{
-					console.log( 'key', key );
 					let request = store.delete( key );
 				});
 			});
