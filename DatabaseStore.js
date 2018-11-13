@@ -217,8 +217,11 @@ class DatabaseStore
 		});
 	};
 
-	addItems(storeName, items)
+
+	addItems(storeName, items, i)
 	{
+		let insertIgnore = i;
+
 		if( this.debug )
 			console.log('Adding items', items );
 
@@ -260,21 +263,20 @@ class DatabaseStore
 
 			let errorEvt = (evt)=>
 			{
+				if( insertIgnore )
+				{
+					evt.preventDefault();
+				}
 				if( this.debug )
 					console.log('AddItems '+storeName+' Request Success', evt );
 			};
 
 			items.forEach((k)=>
 			{
-				try{
-					let request = store.add( k );
-					request.onsuccess = successEvt;
-					request.onerror	= errorEvt;
-				}
-				catch(jj)
-				{
-					console.error( jj );
-				}
+				let request = store.add( k );
+				request.onsuccess = successEvt;
+				request.onerror	= errorEvt;
+				console.error( jj );
 			});
 		});
 	}
