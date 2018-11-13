@@ -718,25 +718,33 @@ class DatabaseStore
 				let store		= transaction.objectStore( storeName );
 				let queryObject = this._getQueryObject( storeName, transaction, options );
 				let range		= this._getKeyRange( options );
-				let direction	= this._getOptionsDirection( options );
-				let request 	= queryObject.openCursor( range );
-				let results		= [];
 
-				request.onerror = (evt)=>
+				if( 'index' in options || range === null )
 				{
-					console.log('cursor error',evt);
-				};
-				request.onsuccess = (evt)=>
-				{
-					let cursor = evt.target.result;
+					let direction	= this._getOptionsDirection( options );
+					let request 	= queryObject.openCursor( range );
 
-					if( cursor )
+					request.onerror = (evt)=>
 					{
-						cursor.delete();
-						cursor.continue();
-					}
-				};
+						console.log('cursor error',evt);
+					};
+					request.onsuccess = (evt)=>
+					{
+						let cursor = evt.target.result;
+
+						if( cursor )
+						{
+							cursor.delete();
+							cursor.continue();
+						}
+					};
+				}
+				else
+				{
+					store.delete( range );
+				}
 			});
+
 		})
 		.then((x)=>
 		{
