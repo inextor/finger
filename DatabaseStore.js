@@ -409,8 +409,17 @@ class DatabaseStore
 		});
 	}
 
-	getByKey(storeName, orderedKeyList)
+	getByKey(storeName, list )
 	{
+
+		let orderedKeyList = list.slice(0);
+		orderedKeyList.sort((a,b)=>{
+			if( a === b )
+				return 0;
+
+			return a < b ? -1 : 1;
+		});
+
 		return new Promise((resolve,reject)=>
 		{
 			let transaction = this.database.transaction([storeName], 'readonly' );
