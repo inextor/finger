@@ -218,10 +218,8 @@ class DatabaseStore
 	};
 
 
-	addItems(storeName, items, i)
+	addItems(storeName, items, insertIgnore)
 	{
-		let insertIgnore = i;
-
 		if( this.debug )
 			console.log('Adding items', items );
 
@@ -266,6 +264,8 @@ class DatabaseStore
 				if( insertIgnore )
 				{
 					evt.preventDefault();
+					evt.stopPropagation();
+					return;
 				}
 				if( this.debug )
 					console.log('AddItems '+storeName+' Request Success', evt );
@@ -276,7 +276,7 @@ class DatabaseStore
 				let request = store.add( k );
 				request.onsuccess = successEvt;
 				request.onerror	= errorEvt;
-				console.error( jj );
+				//console.error( jj );
 			});
 		});
 	}
