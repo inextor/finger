@@ -215,8 +215,7 @@ class DatabaseStore
 			}
 
 		});
-	};
-
+	}
 
 	addItems(storeName, items, insertIgnore)
 	{
@@ -411,16 +410,10 @@ class DatabaseStore
 		});
 	}
 
-	getByKey(storeName, list )
+	getByKey(storeName, list, opt )
 	{
-
 		let orderedKeyList = list.slice(0);
-		orderedKeyList.sort((a,b)=>{
-			if( a === b )
-				return 0;
-
-			return a < b ? -1 : 1;
-		});
+		let options = opt ? opt : {};
 
 		return new Promise((resolve,reject)=>
 		{
@@ -432,10 +425,13 @@ class DatabaseStore
 			};
 
 			let store		= transaction.objectStore( storeName );
+			let queryObject = this._getQueryObject( storeName, transaction, options );
+			let range		= this._getKeyRange( options );
+
 			let items		= [];
 
 			var i = 0;
-			var cursorReq = store.openCursor();
+			var cursorReq = queryObject.openCursor( range );
 
 			cursorReq.onsuccess = (event)=>
 			{
@@ -746,7 +742,6 @@ class DatabaseStore
 					store.delete( range );
 				}
 			});
-
 		})
 		.then((x)=>
 		{
@@ -766,7 +761,6 @@ class DatabaseStore
 			return Promise.resolve( total - count );
 		});
 	}
-
 
 	remove(storeName, key )
 	{
