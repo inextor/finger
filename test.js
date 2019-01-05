@@ -1,4 +1,4 @@
-
+import DatabaseStore from './DatabaseStore.js';
 
 async function testThis()
 {
@@ -123,6 +123,7 @@ async function testThis()
 	console.log('Items removed ',removeAllReponse );
 	removeAllReponse = await s.removeAll( 'user', { '>=': 150 });
 	console.log('Items removed ',removeAllReponse );
+	console.log('All finished good');
 
 }
 
