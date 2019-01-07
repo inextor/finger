@@ -408,8 +408,9 @@ export default class DatabaseStore
 			request.onerror = ( evt )=>
 			{
 				let msg = 'msg' in evt ? evt['msg'] : evt;
+
 				if( 'msg' in evt )
-				reject('Some errror '+msg );
+					reject('Some errror '+msg );
 			};
 		});
 	}
@@ -820,7 +821,7 @@ export default class DatabaseStore
 	_getOptionsCount( options )
 	{
 		if( options && 'count' in options )
-			return options.count
+			return options.count;
 
 		return null;
 	}
@@ -830,7 +831,7 @@ export default class DatabaseStore
 		if( options && 'direction' in options )
 			return options.direction;
 
-		return "next"
+		return "next";
 	}
 
 	_getQueryObject( storeName ,transaction ,options )
@@ -949,5 +950,9 @@ export default class DatabaseStore
 			}
 			return Promise.resolve( result );
 		});
+	}
+	close()
+	{
+		this.database.close();
 	}
 }
