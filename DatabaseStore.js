@@ -301,7 +301,7 @@ export default class DatabaseStore
 					return;
 				}
 				if( this.debug )
-					console.log('AddItems '+storeName+' Request Success', evt );
+					console.log('AddItems '+storeName+' Request Fail ', evt );
 			};
 
 			items.forEach((k)=>
@@ -533,15 +533,17 @@ export default class DatabaseStore
 			let queryObject = this._getQueryObject( storeName, transaction, options );
 			let range		= this._getKeyRange( options );
 			let direction	= this._getOptionsDirection( options );
-			let request = queryObject.openCursor( range );
+
+			let request = queryObject.openCursor( range, direction );
+
 			let results		= [];
 
 			request.onsuccess = (evt)=>
 			{
 				if( evt.target.result )
 				{
-					if( callbackFilter( evt.target.result ) )
-						results.push( evt.target.result );
+					if( callbackFilter( evt.target.result.value ) )
+						results.push( evt.target.result.value );
 
 					evt.target.result.continue();
 				}
@@ -820,7 +822,7 @@ export default class DatabaseStore
 	_getOptionsCount( options )
 	{
 		if( options && 'count' in options )
-			return options.count
+			return options.count;
 
 		return null;
 	}
@@ -949,5 +951,23 @@ export default class DatabaseStore
 			}
 			return Promise.resolve( result );
 		});
+	}
+
+	getObjectsBackup()
+	{
+
+	}
+
+	restoreBackup( json_obj, ignoreErrors )
+	{
+		let promises = [];
+		let keys = Object.keys( json_obj );
+
+		keys.forEach((key)=>
+		{
+			promises.push( this.addItems( key ,json_obj[ key ], ignoreErrors ) );
+		});
+
+		return Promise.all( promises );
 	}
 }
