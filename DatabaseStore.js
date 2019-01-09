@@ -1,4 +1,38 @@
-class DatabaseStore
+
+function promiseAll( object )
+{
+	var promises	= [];
+	var index		= [];
+
+	for( var i in object )
+	{
+		index.push( i );
+		promises.push( object[ i ] );
+	}
+
+	return new Promise((resolve,reject)=>
+	{
+		Promise.all( promises ).then
+		(
+		 	(values)=>
+			{
+				var obj = {};
+				for(var i=0;i<values.length;i++)
+				{
+					obj[ index[ i ] ] = values [ i ];
+				}
+
+				resolve( obj );
+			},
+			(reason)=>
+			{
+				reject( reason );
+			}
+		);
+	});
+}
+
+export default class DatabaseStore
 {
 	/*
 	 	new DatabaseStore({
@@ -869,7 +903,7 @@ class DatabaseStore
 			result[ i ] = this.count(storeName,{ index: i });
 		});
 
-		return PromiseUtils.all( result );
+		return promiseAll( result );
 	}
 
 	getDatabaseResume()
@@ -885,10 +919,10 @@ class DatabaseStore
 			storeCounts[ name ] = this.count(name,{});
 		});
 
-		return PromiseUtils.all
+		return promiseAll
 		({
-			 storeCounts: PromiseUtils.all( storeCounts )
-			,indexCounts: PromiseUtils.all( indexCounts )
+			 storeCounts: promiseAll( storeCounts )
+			,indexCounts: promiseAll( indexCounts )
 		})
 		.then(( allCounts )=>
 		{
