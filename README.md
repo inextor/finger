@@ -135,5 +135,5 @@ let removed_count = await db.removeByKeyIds('user',[ 1,2,3,4]);
 	Remove all the items in a the specified object stores
 
 ```javascript
-	await db.clear('user','notes',etc);
+await db.clear('user','notes',etc);
 ```
