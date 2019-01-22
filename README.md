@@ -104,7 +104,7 @@ You can use ">","=",">=","<=" for queries
 	});
 
 	let total_users = await db.count("user");
-	let users_count = await db.count("user",{"index":"name,"=": "Jhon" });
+	let users_count = await db.count("user",{"index":"name","=": "Jhon" });
 
 	let removed_count = await db.removeAll("user",{"index":"age",">",9 });
 	let all_ids = await db.getAllKeys("user",{"index":"age",">":9});
