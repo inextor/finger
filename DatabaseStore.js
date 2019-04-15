@@ -82,6 +82,7 @@ export default class DatabaseStore
 		{
 			let DBOpenRequest	   = window.indexedDB.open( this.schema.name || 'default', this.schema.version );
 
+			let isAnUpgrade = false;
 			DBOpenRequest.onerror   = ( evt )=>
 			{
 				if( this.debug )
@@ -92,6 +93,8 @@ export default class DatabaseStore
 
 			DBOpenRequest.onupgradeneeded	 = (evt)=>
 			{
+				isAnUpgrade = true;
+
 				if( this.debug )
 					console.log('Init creating stores');
 
@@ -102,7 +105,7 @@ export default class DatabaseStore
 			DBOpenRequest.onsuccess = (e)=>
 			{
 				this.database	= e.target.result;
-				resolve( e );
+				resolve( isAnUpgrade );
 			};
 		});
 	}
