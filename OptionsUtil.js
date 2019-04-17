@@ -1,0 +1,68 @@
+export default class OptionsUtils
+{
+  getCount( options )
+	{
+		if( options && 'count' in options )
+			return options.count;
+
+		return null;
+	}
+
+	getDirection(options)
+	{
+		if( options && 'direction' in options )s
+			return options.direction;
+
+		return "next";
+	}
+
+	static getQueryObject( options )
+	{
+		return options && 'index' in options
+		  ? store.index( option.index )
+		  : this.store;
+	}
+
+	/*
+	 *	x.countQuery('users','id',{index:'xxxx' '>=' : 3 , '<=' : '5' });
+	 */
+
+	static getKeyRange( options )
+	{
+		if( options === null || options === undefined )
+			return null;
+
+		if( '=' in options )
+		{
+			return IDBKeyRange.only( options['='] );
+		}
+
+		let isLowerBoundOpen	= '>' in options;
+		let isLowerBound  		= isLowerBoundOpen || '>=' in options;
+
+		let isUpperBoundOpen	= '<' in options;
+		let isUpperBound		= isUpperBoundOpen || '<=' in options;
+
+
+		if( isLowerBound && isUpperBound )
+		{
+			let lowerBound	= options[ isLowerBoundOpen ?  '>':'>='];
+			let upperBound	= options[ isUpperBoundOpen ?  '<':'<='];
+			return IDBKeyRange.bound( lowerBound, upperBound, isLowerBoundOpen, isUpperBoundOpen );
+		}
+
+		if( isLowerBound )
+		{
+			let lowerBound	= options[ isLowerBoundOpen ? '>' : '>=' ];
+			return IDBKeyRange.lowerBound( lowerBound , isLowerBoundOpen );
+		}
+
+		if( isUpperBound )
+		{
+			let upperBound = options[ isUpperBoundOpen ? '<' : '<=' ];
+			return IDBKeyRange.upperBound( upperBound , isUpperBoundOpen );
+		}
+
+		return null;
+	}
+}
