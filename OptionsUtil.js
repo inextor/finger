@@ -8,7 +8,7 @@ export default class OptionsUtils
 		return null;
 	}
 
-	getDirection(options)
+	static getDirection(options)
 	{
 		if( options && 'direction' in options )s
 			return options.direction;

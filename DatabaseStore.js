@@ -1,4 +1,3 @@
-import ByteStorage from './ByteStorage.js';
 
 function promiseAll( object )
 {
@@ -36,6 +35,20 @@ function promiseAll( object )
 export default class DatabaseStore
 {
 	/*
+	/*
+	    name : "users"
+	    ,version : 1
+	    stores:
+	    {
+	      user : { keyPath: 'id'
+	      ,autoincrement: true
+	      ,indexes:
+	      {
+	        'name' : {keypath: 'name', objectParameters: { uniq: false, multientry
+	      }
+	    }
+
+	*/
 	 	new DatabaseStore({
 			name		: "users"
 			,version	: 1
@@ -1050,5 +1063,10 @@ export default class DatabaseStore
 			});
 
 		return promiseAll( results );
+	}
+
+	getTransaction(stores,mode)
+	{
+    return new Transaction( this.database ,stores ,mode );
 	}
 }

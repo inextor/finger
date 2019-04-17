@@ -1,4 +1,7 @@
-export default class ObjectStore
+import OptionsUtils from './OptionsUtils.js'
+
+
+class ObjectStore
 {
   constructor(name)
   {
@@ -15,24 +18,24 @@ export default class ObjectStore
 		  generatedId = evt.target.result;
 
 			if( this.debug )
-			  console.log('AddItem('+storeName+' key:'+key+' item:'+JSON.stringify( item )+' Request Success', evt );
+			  console.log('AddItem('+this.name+' key:'+key+' item:'+JSON.stringify( item )+' Request Success', evt );
 					//resolve(evt);
     };
 
 		request.onerror = (evt)=>
 		{
 		  if( this.debug )
-			  console.log('AddItem('+storeName+' key:'+key+' item:'+JSON.stringify( item )+' Request Error ', evt);
+			  console.log('AddItem('+this.name+' key:'+key+' item:'+JSON.stringify( item )+' Request Error ', evt);
 		};
   }
 
-  get(storeName, key )
+  get( key )
 	{
 		return new Promise((resolve,reject)=>
 		{
 			if( this.debug )
 			{
-				console.log("Store name", storeName );
+				console.log("Store name", this.name );
 			}
 
 			let request = this.store.get( key );
@@ -66,7 +69,7 @@ export default class ObjectStore
 					  return;
 				  }
 				  if( this.debug )
-					  console.log('AddItems '+storeName+' Request Fail ', evt );
+					  console.log('AddItems '+this.name+' Request Fail ', evt );
 			  };
   		}
 	  }
@@ -81,8 +84,8 @@ export default class ObjectStore
 		    ? this.store.index( option.index )
 		    : this.store;
 
-			let range		= this._getKeyRange( options );
-			let count		= this._getOptionsCount( options );
+			let range		= OptionsUtils.getKeyRange( options );
+			let count		= OptionsUtils.getCount( options );
 
 			let request  = ( range == null && count == 0 )
 				  ? queryObject.getAll()
@@ -135,7 +138,8 @@ export default class ObjectStore
 
 		return new Promise((resolve,reject)=>
 		{
-				let range		= this._getKeyRange( options );
+
+			  let range		= OptionsUtils.getKeyRange( options );
 				let request store.delete( range );
 				request.onsuccess = ()=>{
 				    resolve(request); //TODO Check how many deleted
@@ -149,7 +153,7 @@ export default class ObjectStore
 
 	}
 
-	getByKey(storeName, list, opt )
+	getByKey(list, opt )
 	{
 		let orderedKeyList = list.slice(0);
 		let options = opt ? opt : {};
@@ -160,7 +164,7 @@ export default class ObjectStore
 		    ? this.store.index( option.index )
 		    : this.store;
 
-			let range		= this._getKeyRange( options );
+			let range		= OptionsUtils.getKeyRange( options );
 			let items		= [];
 
 			var i = 0;
@@ -204,7 +208,7 @@ export default class ObjectStore
 		});
 	}
 
-  count(storeName, options)
+  count(options)
 	{
 		return new Promise((resolve,reject)=>
 		{
@@ -212,9 +216,10 @@ export default class ObjectStore
 		    ? this.store.index( option.index )
 		    : this.store;
 
-			let range		= this._getKeyRange( options );
+			let range		= OptionsUtils.getKeyRange( options );
 			let request = queryObject.count( range );
 
+			request.onerror = reject;
 			request.onsuccess = ()=>
 			{
 				resolve( request.result );
@@ -222,70 +227,5 @@ export default class ObjectStore
 		});
 	}
 
-  _getOptionsCount( options )
-	{
-		if( options && 'count' in options )
-			return options.count;
-
-		return null;
-	}
-
-	_getOptionsDirection(options)
-	{
-		if( options && 'direction' in options )
-			return options.direction;
-
-		return "next";
-	}
-
-	_getQueryObject( options )
-	{
-		return options && 'index' in options
-		  ? store.index( option.index )
-		  : this.store;
-	}
-
-	/*
-	 *	x.countQuery('users','id',{index:'xxxx' '>=' : 3 , '<=' : '5' });
-	 */
-
-	_getKeyRange( options )
-	{
-		if( options === null || options === undefined )
-			return null;
-
-		if( '=' in options )
-		{
-			return IDBKeyRange.only( options['='] );
-		}
-
-		let isLowerBoundOpen	= '>' in options;
-		let isLowerBound  		= isLowerBoundOpen || '>=' in options;
-
-		let isUpperBoundOpen	= '<' in options;
-		let isUpperBound		= isUpperBoundOpen || '<=' in options;
-
-
-		if( isLowerBound && isUpperBound )
-		{
-			let lowerBound	= options[ isLowerBoundOpen ?  '>':'>='];
-			let upperBound	= options[ isUpperBoundOpen ?  '<':'<='];
-			return IDBKeyRange.bound( lowerBound, upperBound, isLowerBoundOpen, isUpperBoundOpen );
-		}
-
-		if( isLowerBound )
-		{
-			let lowerBound	= options[ isLowerBoundOpen ? '>' : '>=' ];
-			return IDBKeyRange.lowerBound( lowerBound , isLowerBoundOpen );
-		}
-
-		if( isUpperBound )
-		{
-			let upperBound = options[ isUpperBoundOpen ? '<' : '<=' ];
-			return IDBKeyRange.upperBound( upperBound , isUpperBoundOpen );
-		}
-
-		return null;
-	}
 }
 
