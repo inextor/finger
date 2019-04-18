@@ -5,7 +5,7 @@ export default class ObjectStore
 	constructor(idbStore)
 	{
 		this.store = idbStore;
-		this.debug = false;
+		this.debug = true;
 	}
 
 	add( item, key )
@@ -125,7 +125,7 @@ export default class ObjectStore
 					resolve();
 			}
 
-			//Weird bug doesn't recognize items as array
+			/*/Weird bug doesn't recognize items as array
 			for(let i=0;i<items.length;i++)
 			{
 				let request = this.store.put(items[i]);
@@ -133,12 +133,12 @@ export default class ObjectStore
 				request.onerror = reject;
 			}/*/
 			//console.log('Updating', items)
-			items.foreEach((i)=>{
+			items.forEach((i)=>{
 			let request = this.store.put(i);
 				request.onsuccess = handler;
 				request.onerror = reject;
 			});
-			*/
+			//*/
 		});
 	}
 
@@ -214,7 +214,7 @@ export default class ObjectStore
 
 	}
 
-	getByKey(list, opt )
+	getByKeyIndex(list,opt)
 	{
 		let orderedKeyList = list.slice(0);
 		let options = opt ? opt : {};
@@ -266,6 +266,30 @@ export default class ObjectStore
 					cursor.continue(orderedKeyList[i]);
 				}
 			};
+		});
+	}
+	getByKey(list, opt )
+	{
+		if( opt && 'index' in opt )
+			return getByKeyIndex( list, opt )
+
+		return new Promise((resolve,reject)=>
+		{
+			let result = [];
+			let count = list.length;
+
+			let success_handler = (evt)=>
+			{
+				count--;
+				if( count == 0 )
+					resolve( result );
+			};
+			list.forEach((i)=>
+			{
+				let request = this.store.get(i);
+				request.onsuccess = success_handler;
+				request.onerror = reject;
+			})
 		});
 	}
 
@@ -365,13 +389,17 @@ export default class ObjectStore
 			let result 	= {};
 			let names 	= Array.from( this.store.indexNames );
 			let counter = names.length;
+			if( this.debug )
+				console.log('Get all index count for '+this.store.name );
 			names.forEach( i =>
 			{
 				let index = this.store.index( i );
 				let request = index.count();
 				request.onerror = reject;
-				request.success = (evt)=>
+				request.onsuccess = (evt)=>
 				{
+					if( this.debug )
+						console.log('Success Count for '+i );
 					result[ i ] = request.result;
 					counter--;
 					if( counter == 0 )

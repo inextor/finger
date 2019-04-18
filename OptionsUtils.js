@@ -10,7 +10,7 @@ export default class OptionsUtils
 
 	static getDirection(options)
 	{
-		if( options && 'direction' in options )s
+		if( options && 'direction' in options )
 			return options.direction;
 
 		return "next";

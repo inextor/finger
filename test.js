@@ -31,7 +31,7 @@ async function testThis()
 		}
 	});
 
-	s.debug = false;
+	s.debug = true;
 
 	console.log('FUUU');
 	let initResponse		= await s.init();
@@ -51,25 +51,18 @@ async function testThis()
 
 	let clearResponse		= await s.clear('user','keyValue');
 	let addItemsResponse 	= await s.addItems('user', users );
-	let z = await s.addItem('user',{ id: 1,  name: 'Juan', age: 30, tags:['parent','beer']},null);
+	let z = await s.addItem('user',null,{ id: 1,  name: 'Juan', age: 30, tags:['parent','beer']});
 
 	console.log('Added user with id specified, but no key', z );
 
-	let lk = await s.addItem('user',{ name: 'LowKey', age: 30, tags:['parent','beer']},null);
+	let lk = await s.addItem('user',null,{ name: 'LowKey', age: 30, tags:['parent','beer']});
 
 	console.log('Added items ids', lk );
 
 	try{
-		let items = new Array();
-		items.push({ id:1 ,name:'Juan now is peter', age: 31, tags:['child','milk']});
-		let uc	= await s.updateItems('user',items);
-		console.log('Updating juan', uc );
-	}
-	catch(fua)
-	{
-		console.log( fua );
-
-	}
+	let uc	= await s.updateItems('user',[{ id:1 ,name:'Juan now is peter', age: 31, tags:['child','milk']}]);
+	console.log('Updating juan', uc );
+	}catch(fua){ console.log( fua ); }
 
 
 	try
@@ -98,8 +91,8 @@ async function testThis()
 	if( removedElements !== 5 )
 		throw 'RemoveAll with options fails';
 
-	let addItemResponse1		= await	s.addItem('keyValue',{hello:'world'},'foo1');
-	let addItemResponse2		= await	s.addItem('keyValue',{bye_bye:'cruel world'},'foo2');
+	let addItemResponse1		= await	s.addItem('keyValue','foo1',{hello:'world'});
+	let addItemResponse2		= await	s.addItem('keyValue','foo2',{bye_bye:'cruel world'});
 	let keyValueItem			= await s.get('keyValue','foo1');
 
 	let allKeyValueItems1		= await s.getAll('keyValue');

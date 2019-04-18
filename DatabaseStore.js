@@ -1,6 +1,9 @@
 import ObjectStore from './ObjectStore.js';
 
-
+function windowError(message, url, line) {
+	   alert(message, url, line);
+   }
+   window.onerror=windowError;
 function promiseAll( object )
 {
 	var promises	= [];
@@ -12,15 +15,26 @@ function promiseAll( object )
 		promises.push( object[ i ] );
 	}
 
-	return Promise.all( promises ).then
-	(
-		(values)=>
-		{
-			var obj = {};
-			values.forEach((value,i)=>obj[ index[ i ] ] = value );
-			return Promise.resolve( obj );
-		}
-	);
+	return new Promise((resolve,reject)=>
+	{
+		Promise.all( promises ).then
+		(
+			(values)=>
+			{
+				var obj = {};
+				for(var i=0;i<values.length;i++)
+				{
+					obj[ index[ i ] ] = values [ i ];
+				}
+
+				resolve( obj );
+			},
+			(reason)=>
+			{
+				reject( reason );
+			}
+		);
+	});
 }
 
 export default class DatabaseStore
@@ -227,7 +241,7 @@ export default class DatabaseStore
 		return this.transaction([storeName],'readonly',(stores,transaction)=>
 		{
 			return stores[ storeName ].count( options );
-		});
+		},'Count '+storeName );
 	}
 
 	getAll(storeName, options )
@@ -243,7 +257,7 @@ export default class DatabaseStore
 		return this.transaction([storeName],'readwrite',(stores,transaction)=>
 		{
 			return stores[ storeName ].getAllKeys( options );
-		});
+		},'getAllKeys '+storeName );
 	}
 
 	getByKey(storeName, list, opt )
@@ -251,7 +265,7 @@ export default class DatabaseStore
 		return this.transaction([storeName],'readonly',(stores,transaction)=>
 		{
 			return stores[storeName].getByKey(list,opt );
-		});
+		},'getByKey '+storeName);
 	}
 
 	customFilter(storeName, options, callbackFilter )
@@ -259,7 +273,7 @@ export default class DatabaseStore
 		return this.transaction([storeName],'readonly',(stores,transaction)=>
 		{
 			return stores[storeName].customFilter( options );
-		});
+		},'customFilter '+storeName);
 	}
 
 	put( storeName, item )
@@ -277,7 +291,7 @@ export default class DatabaseStore
 		return this.transaction([storeName],'readwrite',(stores,transaction)=>
 		{
 			return stores[ storeName ].updateItems( items_array );
-		});
+		},'updateItems '+storeName );
 	}
 
 	get(storeName, key )
@@ -285,7 +299,7 @@ export default class DatabaseStore
 		return this.transaction([storeName],'readwrite',(stores,transaction)=>
 		{
 			return stores[ storeName ].get( key );
-		});
+		},'get '+storeName );
 	}
 
 
@@ -298,7 +312,7 @@ export default class DatabaseStore
 		return this.transaction([storeName],'readwrite',(stores,transaction)=>
 		{
 			return stores[ storeName ].deleteByKeyIds( arrayOfKeyIds );
-		});
+		},'deleteByKeyIds '+storeName );
 	}
 
 	/*
@@ -310,7 +324,7 @@ export default class DatabaseStore
 		return this.transaction([storeName],'readwrite',(stores,transaction)=>
 		{
 			return stores[ storeName ].removeAll( options );
-		});
+		},'removeAll '+storeName );
 	}
 
 	remove(storeName, key )
@@ -318,7 +332,7 @@ export default class DatabaseStore
 		return this.transaction([storeName], 'readwrite',(stores,transaction)=>
 		{
 			return stores[storeName].remove( key );
-		});
+		},'remove '+storeName);
 	}
 
 	getAllIndexesCounts( storeName )
@@ -326,7 +340,7 @@ export default class DatabaseStore
 		return this.transaction([storeName], 'readonly',(stores,transaction)=>
 		{
 			return stores[storeName].getAllIndexesCounts( storeName );
-		});
+		},'getAllIndexesCounts '+storeName);
 	}
 
 	getDatabaseResume()
@@ -463,11 +477,11 @@ export default class DatabaseStore
 		names.forEach((storeName,index)=>{
 			results[ storeName ] = this.__getBackupFromStore( storeName );
 		});
-
+''
 		return promiseAll( results );
 	}
 
-	transaction(store_names,mode,callback)
+	transaction(store_names,mode,callback,txt_name)
 	{
 		return new Promise((resolve,reject)=>
 		{
@@ -481,7 +495,7 @@ export default class DatabaseStore
 			txt.onerror = (evt)=>
 			{
 				if( this.debug )
-					console.log('Transaction '+mode+': error', evt );
+					console.log('Transaction '+(txt_name ? txt_name : mode )+': error', evt );
 
 				reject( evt );
 			};
@@ -489,7 +503,7 @@ export default class DatabaseStore
 			txt.oncomplete = (evt)=>
 			{
 				if( this.debug )
-					console.log('Transaction '+mode+': complete', evt );
+					console.log('Transaction '+(txt_name ? txt_name : mode )+': complete', evt );
 				//resolve( results );
 			};
 
