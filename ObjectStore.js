@@ -6,19 +6,19 @@ export default class ObjectStore
 	{
 		this.store = idbStore;
 		this.debug = true;
+		this.name = idbStore.name;
 	}
 
 	add( item, key )
 	{
 		return new Promise((resolve,reject)=>{
-			let request = key
-				? this.store.add( item, key )
-				: this.store.add( item );
+			let request = key ? this.store.add( item, key ) : this.store.add( item );
 
 			request.onsuccess = (evt)=>
 			{
 				if( this.debug )
 					console.log('AddItem('+this.name+' key:'+key+' item:'+JSON.stringify( item )+' Request Success', evt );
+
 				resolve(evt.target.result);
 			};
 
@@ -26,10 +26,33 @@ export default class ObjectStore
 			{
 				if( this.debug )
 					console.log('AddItem('+this.name+' key:'+key+' item:'+JSON.stringify( item )+' Request Error ', evt);
-					reject( evt );
+
+				reject( evt );
 			};
 		});
+	}
 
+	put( item, key )
+	{
+		return new Promise((resolve,reject)=>{
+			let request = key ? this.store.put( item, key ) : this.store.put( item );
+
+			request.onsuccess = (evt)=>
+			{
+				if( this.debug )
+					console.log('Put Item('+this.name+' key:'+key+' item:'+JSON.stringify( item )+' Request Success', evt );
+
+				resolve(evt.target.result);
+			};
+
+			request.onerror = (evt)=>
+			{
+				if( this.debug )
+					console.log('Put Item('+this.name+' key:'+key+' item:'+JSON.stringify( item )+' Request Error ', evt);
+
+				reject( evt );
+			};
+		});
 	}
 
 	get( key )
@@ -69,6 +92,8 @@ export default class ObjectStore
 			let request =  this.store.add( i );
 			request.onerror = error_handler;
 		});
+
+		return Promise.resolve();
 	}
 
 	addAll(items,insertIgnore)
@@ -77,14 +102,6 @@ export default class ObjectStore
 		return new Promise((resolve,reject)=>
 		{
 			let added_items = [];
-
-			let success_handler = (generated_id)=>
-			{
-				added_items.push( generated_id );
-				count--;
-				if( count == 0 )
-					resolve( added_items );
-			};
 
 			let error_handler = (evt)=>
 			{
@@ -108,8 +125,14 @@ export default class ObjectStore
 			items.forEach((i)=>
 			{
 				let request = this.store.add( i );
-				request.onsuccess = success_handler;
 				request.onerror = error_handler;
+				request.onsuccess = (generated_id)=>
+				{
+					added_items.push( request.result );
+					count--;
+					if( count == 0 )
+						resolve( added_items );
+				};
 			});
 		});
 	}
@@ -123,7 +146,7 @@ export default class ObjectStore
 				counter--;
 				if( counter == 0 )
 					resolve();
-			}
+			};
 
 			/*/Weird bug doesn't recognize items as array
 			for(let i=0;i<items.length;i++)
@@ -199,13 +222,12 @@ export default class ObjectStore
 
 		return new Promise((resolve,reject)=>
 		{
-
-				let range		= OptionsUtils.getKeyRange( options );
-				let request = this.store.delete( range );
-				request.onsuccess = (evt)=>{
-						resolve(request); //TODO Check how many deleted
-				};
-				request.onerror = reject;
+			let range		= OptionsUtils.getKeyRange( options );
+			let request = this.store.delete( range );
+			request.onsuccess = (evt)=>{
+					resolve(request); //TODO Check how many deleted
+			};
+			request.onerror = reject;
 		});
 	}
 
@@ -271,25 +293,29 @@ export default class ObjectStore
 	getByKey(list, opt )
 	{
 		if( opt && 'index' in opt )
-			return getByKeyIndex( list, opt )
+			return getByKeyIndex( list, opt );
+
+		if( list.length == 0 )
+			return Promise.resolve([]);
 
 		return new Promise((resolve,reject)=>
 		{
 			let result = [];
 			let count = list.length;
 
-			let success_handler = (evt)=>
-			{
-				count--;
-				if( count == 0 )
-					resolve( result );
-			};
 			list.forEach((i)=>
 			{
 				let request = this.store.get(i);
-				request.onsuccess = success_handler;
+				request.onsuccess = ()=>
+				{
+					result.push( request.result );
+					count--;
+
+					if( count == 0 )
+						resolve( result );
+				};
 				request.onerror = reject;
-			})
+			});
 		});
 	}
 
@@ -317,7 +343,7 @@ export default class ObjectStore
 		return new Promise((resolve,reject)=>
 		{
 			let queryObject = options && 'index' in options
-				? this.store.index( option.index )
+				? this.store.index( options.index )
 				: this.store;
 
 			let range		= OptionsUtils.getKeyRange( options );
@@ -388,9 +414,16 @@ export default class ObjectStore
 		{
 			let result 	= {};
 			let names 	= Array.from( this.store.indexNames );
+
+			if( names.length == 0 )
+			{
+				resolve(result);
+				return;
+			}
+
 			let counter = names.length;
 			if( this.debug )
-				console.log('Get all index count for '+this.store.name );
+				console.log('Get all index count for '+this.name );
 			names.forEach( i =>
 			{
 				let index = this.store.index( i );
@@ -406,6 +439,33 @@ export default class ObjectStore
 						resolve( result );
 				};
 			});
+
+		});
+	}
+	getBackup()
+	{
+		return new Promise((resolve,reject)=>
+		{
+			let result 	= [];
+			let store	= transaction.objectStore( storeName );
+			let request = store.openCursor();
+
+			request.onerror = reject;
+			request.onsuccess = (evt)=>
+			{
+				if( evt.target.result )
+				{
+					result.push(  evt.target.result.value );
+					evt.target.result.continue();
+				}
+				else
+				{
+					//Maybe call resolve
+					resolve( result );
+				}
+			};
 		});
 	}
 }
+
+
