@@ -1,32 +1,35 @@
 import OptionsUtils from './OptionsUtils.js';
 
-
-class ObjectStore
+export default class ObjectStore
 {
-	constructor(name)
+	constructor(idbStore)
 	{
-		this.name = name;
-		this.store = null;
+		this.store = idbStore;
+		this.debug = false;
 	}
 
-	add( object, key )
+	add( item, key )
 	{
-		let request = key ? store.add( item, key ) : store.add( item );
+		return new Promise((resolve,reject)=>{
+			let request = key
+				? this.store.add( item, key )
+				: this.store.add( item );
 
-		request.onsuccess = (evt)=>
-		{
-			generatedId = evt.target.result;
+			request.onsuccess = (evt)=>
+			{
+				if( this.debug )
+					console.log('AddItem('+this.name+' key:'+key+' item:'+JSON.stringify( item )+' Request Success', evt );
+				resolve(evt.target.result);
+			};
 
-			if( this.debug )
-				console.log('AddItem('+this.name+' key:'+key+' item:'+JSON.stringify( item )+' Request Success', evt );
-					//resolve(evt);
-		};
+			request.onerror = (evt)=>
+			{
+				if( this.debug )
+					console.log('AddItem('+this.name+' key:'+key+' item:'+JSON.stringify( item )+' Request Error ', evt);
+					reject( evt );
+			};
+		});
 
-		request.onerror = (evt)=>
-		{
-			if( this.debug )
-				console.log('AddItem('+this.name+' key:'+key+' item:'+JSON.stringify( item )+' Request Error ', evt);
-		};
 	}
 
 	get( key )
@@ -111,13 +114,41 @@ class ObjectStore
 		});
 	}
 
+	updateItems(items)
+	{
+		return new Promise((resolve,reject)=>
+		{
+			let counter = items.length;
+			let handler = (evt)=>{
+				counter--;
+				if( counter == 0 )
+					resolve();
+			}
+
+			//Weird bug doesn't recognize items as array
+			for(let i=0;i<items.length;i++)
+			{
+				let request = this.store.put(items[i]);
+				request.onsuccess = handler;
+				request.onerror = reject;
+			}/*/
+			//console.log('Updating', items)
+			items.foreEach((i)=>{
+			let request = this.store.put(i);
+				request.onsuccess = handler;
+				request.onerror = reject;
+			});
+			*/
+		});
+	}
+
 	getAll( options )
 	{
 		return new Promise((resolve,reject)=>
 		{
 
 			let queryObject = options && 'index' in options
-				? this.store.index( option.index )
+				? this.store.index( options.index )
 				: this.store;
 
 			let range		= OptionsUtils.getKeyRange( options );
@@ -243,7 +274,7 @@ class ObjectStore
 		return new Promise((resolve,reject)=>
 		{
 			let queryObject = options && 'index' in options
-				? this.store.index( option.index )
+				? this.store.index( options.index )
 				: this.store;
 
 			let range		= OptionsUtils.getKeyRange( options );
@@ -327,5 +358,26 @@ class ObjectStore
 			return Promise.resolve( total - count );
 		});
 	}
+	getAllIndexesCounts()
+	{
+		return new Promise((resolve,reject)=>
+		{
+			let result 	= {};
+			let names 	= Array.from( this.store.indexNames );
+			let counter = names.length;
+			names.forEach( i =>
+			{
+				let index = this.store.index( i );
+				let request = index.count();
+				request.onerror = reject;
+				request.success = (evt)=>
+				{
+					result[ i ] = request.result;
+					counter--;
+					if( counter == 0 )
+						resolve( result );
+				};
+			});
+		});
+	}
 }
-

@@ -1,3 +1,5 @@
+import ObjectStore from './ObjectStore.js';
+
 
 function promiseAll( object )
 {
@@ -10,26 +12,15 @@ function promiseAll( object )
 		promises.push( object[ i ] );
 	}
 
-	return new Promise((resolve,reject)=>
-	{
-		Promise.all( promises ).then
-		(
-		 	(values)=>
-			{
-				var obj = {};
-				for(var i=0;i<values.length;i++)
-				{
-					obj[ index[ i ] ] = values [ i ];
-				}
-
-				resolve( obj );
-			},
-			(reason)=>
-			{
-				reject( reason );
-			}
-		);
-	});
+	return Promise.all( promises ).then
+	(
+		(values)=>
+		{
+			var obj = {};
+			values.forEach((value,i)=>obj[ index[ i ] ] = value );
+			return Promise.resolve( obj );
+		}
+	);
 }
 
 export default class DatabaseStore
@@ -48,7 +39,6 @@ export default class DatabaseStore
 	      }
 	    }
 
-	*/
 	 	new DatabaseStore(""{
 			name		: "users"
 			,version	: 1
@@ -206,25 +196,25 @@ export default class DatabaseStore
 		throw 'Database is not initialized';
 	}
 
-	addItem( storeName, key, item )
+	addItem( storeName, item, key )
 	{
-		return this.transaction([storeName], 'readwrite',(txt, stores )=>
+		return this.transaction([storeName], 'readwrite',( stores,transaction )=>
 		{
-			return stores[ storeName ].add( key, item );
+			return stores[ storeName ].add( item, key );
 		});
 	}
 
 	addItems(storeName, items, insertIgnore)
 	{
-		return this.transaction([storeName],'readwrite',(txt,stores)=>
+		return this.transaction([storeName],'readwrite',(stores,transaction)=>
 		{
-			return stores[storeName].addItemsFast( items, insertIgnore );
+			return stores[storeName].addAllFast( items, insertIgnore );
 		});
 	}
 
 	clear(...theArgs)
 	{
-		return this.transaction(theArgs,'readwrite',(txt,stores)=>
+		return this.transaction(theArgs,'readwrite',(stores,transaction)=>
 		{
 			let promises = [];
 			theArgs.forEach((i)=> promises.push( stores[i].clear() ));
@@ -234,7 +224,7 @@ export default class DatabaseStore
 
 	count(storeName, options)
 	{
-		return this.transaction([storeName],'readonly',(txt,stores)=>
+		return this.transaction([storeName],'readonly',(stores,transaction)=>
 		{
 			return stores[ storeName ].count( options );
 		});
@@ -242,7 +232,7 @@ export default class DatabaseStore
 
 	getAll(storeName, options )
 	{
-		return this.transaction([storeName],'readonly',(txt,stores)=>
+		return this.transaction([storeName],'readonly',(stores,transaction)=>
 		{
 			return stores[ storeName ].getAll( options );
 		});
@@ -250,7 +240,7 @@ export default class DatabaseStore
 
 	getAllKeys(storeName, options )
 	{
-		return this.transaction([storeName],'readwrite',(txt,stores)=>
+		return this.transaction([storeName],'readwrite',(stores,transaction)=>
 		{
 			return stores[ storeName ].getAllKeys( options );
 		});
@@ -258,7 +248,7 @@ export default class DatabaseStore
 
 	getByKey(storeName, list, opt )
 	{
-		return this.transaction([storeName],'readonly',(txt,stores)=>
+		return this.transaction([storeName],'readonly',(stores,transaction)=>
 		{
 			return stores[storeName].getByKey(list,opt );
 		});
@@ -266,7 +256,7 @@ export default class DatabaseStore
 
 	customFilter(storeName, options, callbackFilter )
 	{
-		return this.transaction([storeName],'readonly',(txt,stores)=>
+		return this.transaction([storeName],'readonly',(stores,transaction)=>
 		{
 			return stores[storeName].customFilter( options );
 		});
@@ -282,17 +272,17 @@ export default class DatabaseStore
 		return this.updateItems(storeName, items );
 	}
 
-	updateItems( storeName, items )
+	updateItems( storeName, items_array )
 	{
-		return this.transaction([storeName],'readwrite',(txt,stores)=>
+		return this.transaction([storeName],'readwrite',(stores,transaction)=>
 		{
-			return stores[ storeName ].updateItems( items );
+			return stores[ storeName ].updateItems( items_array );
 		});
 	}
 
 	get(storeName, key )
 	{
-		return this.transaction([storeName],'readwrite',(stores)=>
+		return this.transaction([storeName],'readwrite',(stores,transaction)=>
 		{
 			return stores[ storeName ].get( key );
 		});
@@ -305,7 +295,7 @@ export default class DatabaseStore
 
 	deleteByKeyIds(storeName, arrayOfKeyIds )
 	{
-		return this.transaction([storeName],'readwrite',(stores)=>
+		return this.transaction([storeName],'readwrite',(stores,transaction)=>
 		{
 			return stores[ storeName ].deleteByKeyIds( arrayOfKeyIds );
 		});
@@ -317,7 +307,7 @@ export default class DatabaseStore
 
 	removeAll(storeName, options )
 	{
-		return this.transaction([storeName],'readwrite',(stores)=>
+		return this.transaction([storeName],'readwrite',(stores,transaction)=>
 		{
 			return stores[ storeName ].removeAll( options );
 		});
@@ -325,7 +315,7 @@ export default class DatabaseStore
 
 	remove(storeName, key )
 	{
-		return this.transaction([storeName], 'readwrite',(stores)=>
+		return this.transaction([storeName], 'readwrite',(stores,transaction)=>
 		{
 			return stores[storeName].remove( key );
 		});
@@ -333,7 +323,7 @@ export default class DatabaseStore
 
 	getAllIndexesCounts( storeName )
 	{
-		return this.transaction([storeName], 'readonly',(stores)=>
+		return this.transaction([storeName], 'readonly',(stores,transaction)=>
 		{
 			return stores[storeName].getAllIndexesCounts( storeName );
 		});
@@ -472,7 +462,7 @@ export default class DatabaseStore
 
 		names.forEach((storeName,index)=>{
 			results[ storeName ] = this.__getBackupFromStore( storeName );
-			});
+		});
 
 		return promiseAll( results );
 	}
@@ -482,7 +472,7 @@ export default class DatabaseStore
 		return new Promise((resolve,reject)=>
 		{
 			store_names.forEach((i)=>{
-				if( !this.database.objectStoreNames.contains( storeName ) )
+				if( !this.database.objectStoreNames.contains( i ) )
 					throw 'Store "'+i+' doesn\'t exists';
 			});
 
@@ -494,13 +484,6 @@ export default class DatabaseStore
 					console.log('Transaction '+mode+': error', evt );
 
 				reject( evt );
-			};
-
-			txt.onsuccess = (evt)=>
-			{
-				if( this.debug )
-					console.log('Transaction '+mode+': success', evt );
-				//resolve( results );
 			};
 
 			txt.oncomplete = (evt)=>
@@ -517,7 +500,7 @@ export default class DatabaseStore
 				stores[ i ] = new ObjectStore( txt.objectStore( i ) );
 			});
 
-			let result = callback( txt, stores );
+			let result = callback( stores,txt );
 
 			if( result instanceof Promise )
 				result.then( resolve ).catch( reject );
