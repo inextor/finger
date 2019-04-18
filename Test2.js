@@ -4,8 +4,7 @@ let d =new DatabaseStore();//
 
 
 let txt = d.getTransaction(['fooo','zzzz','yyy'],'w');
-.transaction('store','fooo','numbers')
-.add('stores',(txt)=>{retur x.store.getAll('>':10)})
+txt.add('stores',(txt)=>{retur x.store.getAll('>':10)})
 .add('deletes',(txt)=>
 {
   return x.fooo.removeAll('<5');
