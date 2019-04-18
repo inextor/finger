@@ -36,12 +36,23 @@ async function testThis()
 		}
 	});
 
+
+
 let print_error = (error)=> console.error("Error occurred",error);
 	s.debug = true;
 
 	console.log('FUUU');
 	let initResponse		= await s.init();
 	console.log( 'jejeje' );
+
+
+	s.getDatabaseResume().then((result)=>{ console.log("Finish1", result ); });
+	console.log('Waiting for resume');
+	//let resume = await s.getDatabaseResume2().then((result)=>{ console.log("Finish2", result ); });
+	//console.log("Resume", resume );
+
+	/*
+
 
 	//let z	= await s.addItem('user',null,{ id:null, name:'Pepe', age:10, curp:'92idiao2',tags:['child']});
 
@@ -66,32 +77,25 @@ let print_error = (error)=> console.error("Error occurred",error);
 
 
 
-		let items = new Array();
-		items.push({ id:1 ,name:'Juan now is peter', age: 31, tags:['child','milk']});
-		s.updateItems('user',items).then(uc=> console.log('Updating juan', uc ) ).catch(print_error);
-
-
-		s.getDatabaseResume()
-		.then((databaseResume)=>console.log('Resume', databaseResume ))
-		.catch(print_error);;
-
-
+	let items = new Array();
+	items.push({ id:1 ,name:'Juan now is peter', age: 31, tags:['child','milk']});
+	s.updateItems('user',items).then(uc=> console.log('Updating juan', uc ) ).catch(()=>console.log("erroro on updating juan"));
 
 	let usersArray1			=  s.getAll('user').catch(print_error);;
-	let childsOnly			=  s.getAll('user',{index:'tagIndex','=':'child'}).catch(print_error);;
-	let childsOnlyCount		=  s.count('user',{index:'tagIndex','=':'child'}).catch(print_error);;
+	let childsOnly			=  s.getAll('user',{index:'tagIndex','=':'child'}).catch(print_error);
+	let childsOnlyCount		=  s.count('user',{index:'tagIndex','=':'child'}).catch(print_error);
 
 
 
-	s.removeAll('user',{ index: 'age', '<' : 9 }).catch(print_error);;
+	s.removeAll('user',{ index: 'age', '<' : 9 }).catch(print_error);
 	s.getAll('user').catch(print_error);;
 
 	//console.log('Removed elements count',removedElements, 'It remains',userEqualOrGreatThan9.length, 'Elements' );
 
 
 
-		s.addItem('keyValue',{hello:'world'},'foo1').catch(print_error);;
-		s.addItem('keyValue',{bye_bye:'cruel world'},'foo2').catch(print_error);;
+		s.addItem('keyValue',{hello:'world'},'foo1').catch(()=>console.log("erroro on updating foo1"));
+		s.addItem('keyValue',{bye_bye:'cruel world'},'foo2').catch(()=>console.log("erroro on updating foo2"));
 	s.get('keyValue','foo1').catch(print_error);;
 
 	s.getAll('keyValue').catch(print_error);;
@@ -105,12 +109,12 @@ let print_error = (error)=> console.error("Error occurred",error);
 s.clear('user','keyValue');
 	console.log('All the stores are empty');
 
-	s.addItems('user', users );
+	s.addItems('user', users ).catch((e)=>console.log("Error adding items on users"));
 
 	 //s.deleteByKeyIds('user', responseAddAll );
 
 
-s.addItems('user', users );
+//s.addItems('user', users );
 	console.log('Removing al id>150');
 s.removeAll( 'user', { '<=': 150 });
 
@@ -119,6 +123,7 @@ s.removeAll( 'user', { '>=': 150 });
 //	console.log('Items removed ',removeAllReponse );
 	console.log('All finished good');
 
+*/
 }
 
 window.addEventListener('load',()=>
