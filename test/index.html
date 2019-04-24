@@ -27,7 +27,7 @@
 				({
 					id: i
 					,name: "name"+i
-					,age: 100-i
+					,age: (i%20)+1
 				})
 			}
 			return d.addAll('user',items)
@@ -132,7 +132,8 @@
 
   QUnit.test("Clear Functionality", function( assert ) {
 
-			let done = assert.async();
+			let done = assert.async(3);
+			assert.timeout(2000);
 
 			prepareDatabase('clear').then((d)=>
 			{
@@ -143,18 +144,20 @@
 					{
 						console.log("Testing all elements length")
 						assert.ok(result.length == 100,"Testing getAll Elements count"+result.length)
+						done()
 						return d.clear('user');
 					})
 					.then((result)=>
 					{
 						console.log("Result of clear",result);
 						assert.ok( true,"Clear success")
+						done()
 						return d.getAll('user');
 					})
 					.then((result)=>
 					{
-						done();
 						assert.ok( result.length == 0, "There are 0 elements on the DB as promised");
+						done();
 					})
 					.catch((e)=>{
 						console.log("An error occurred",e);
@@ -168,6 +171,41 @@
 				assert.ok(false,"Unexpected error");
 			});
 	});
+
+
+  QUnit.test("Count Functionality", function( assert ) {
+		let done = assert.async()
+		assert.timeout(1000);
+		prepareDatabase('count').then((d)=>
+		{
+				d.count('user').then(result=>
+				{
+					assert.ok( result == 100,"Count All Objects in store");
+					return d.count('user',{index:'age','>':19});
+				})
+				.then((result)=>
+				{
+					assert.ok( result == 5,"Count All With index > Success");
+					return d.count('user',{index:'age','>=':19});
+				})
+				.then((result)=>
+				{
+					assert.ok( result == 10,"Count All >= 19 ");
+					return d.count('user',{index:'age','>=':16,'<':19});
+				})
+				.then((result)=>
+				{
+					assert.ok( result == 15,"Count All With index >= 16 and < 19 Success");
+					done();
+				})
+				.catch((e)=>console.log("Error occourred",e));
+		})
+		.catch((e)=>
+		{
+			console.log("An error Occourred", e);
+		})
+	});
+
 
 
 	/*
