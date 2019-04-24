@@ -5,7 +5,7 @@ export default class ObjectStore
 	constructor(idbStore)
 	{
 		this.store = idbStore;
-		this.debug = true;
+		this.debug = false;
 		this.name = idbStore.name;
 	}
 

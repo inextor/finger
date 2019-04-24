@@ -437,6 +437,7 @@ export default class DatabaseStore
 		store_names.forEach((i)=>
 		{
 			stores[ i ] = new ObjectStore( txt.objectStore( i ) );
+			stores[ i ].debug = this.debug;
 		});
 
 		let result = callback( stores,txt );
