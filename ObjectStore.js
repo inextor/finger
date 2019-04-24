@@ -19,7 +19,7 @@ export default class ObjectStore
 				if( this.debug )
 					console.log('AddItem('+this.name+' key:'+key+' item:'+JSON.stringify( item )+' Request Success', evt );
 
-				resolve(evt.target.result);
+				resolve( evt.target.result );
 			};
 
 			request.onerror = (evt)=>
@@ -30,70 +30,6 @@ export default class ObjectStore
 				reject( evt );
 			};
 		});
-	}
-
-	put( item, key )
-	{
-		return new Promise((resolve,reject)=>{
-			let request = key ? this.store.put( item, key ) : this.store.put( item );
-
-			request.onsuccess = (evt)=>
-			{
-				if( this.debug )
-					console.log('Put Item('+this.name+' key:'+key+' item:'+JSON.stringify( item )+' Request Success', evt );
-
-				resolve(evt.target.result);
-			};
-
-			request.onerror = (evt)=>
-			{
-				if( this.debug )
-					console.log('Put Item('+this.name+' key:'+key+' item:'+JSON.stringify( item )+' Request Error ', evt);
-
-				reject( evt );
-			};
-		});
-	}
-
-	get( key )
-	{
-		return new Promise((resolve,reject)=>
-		{
-			if( this.debug )
-			{
-				console.log("Store name", this.name );
-			}
-
-			let request = this.store.get( key );
-
-			request.onsuccess = ()=>
-			{
-				resolve( request.result );
-			};
-		});
-	}
-
-	addAllFast( items, insertIgnore )
-	{
-		if( !insertIgnore )
-		{
-			items.forEach( i => this.store.add( i ) );
-			return;
-		}
-
-		let error_handler = (evt)=>
-		{
-			evt.preventDefault();
-			evt.stopPropagation();
-		};
-
-		items.forEach((i)=>
-		{
-			let request =  this.store.add( i );
-			request.onerror = error_handler;
-		});
-
-		return Promise.resolve();
 	}
 
 	addAll(items,insertIgnore)
@@ -110,7 +46,6 @@ export default class ObjectStore
 					evt.preventDefault();
 					evt.stopPropagation();
 					count--;
-					added_items.push( null );
 					if( count == 0 )
 						resolve( added_items );
 					return;
@@ -137,39 +72,83 @@ export default class ObjectStore
 		});
 	}
 
-	updateItems(items)
+	addAllFast( items, insertIgnore )
+	{
+		if( !insertIgnore )
+		{
+			items.forEach( i => this.store.add( i ) );
+			return Promise.resolve();
+		}
+
+		let error_handler = (evt)=>
+		{
+			evt.preventDefault();
+			evt.stopPropagation();
+		};
+
+		items.forEach((i)=>
+		{
+			let request =	this.store.add( i );
+			request.onerror = error_handler;
+		});
+
+		return Promise.resolve();
+	}
+
+	clear()
 	{
 		return new Promise((resolve,reject)=>
 		{
-			let counter = items.length;
-			let handler = (evt)=>{
-				counter--;
-				if( counter == 0 )
-					resolve();
-			};
-
-			/*/Weird bug doesn't recognize items as array
-			for(let i=0;i<items.length;i++)
-			{
-				let request = this.store.put(items[i]);
-				request.onsuccess = handler;
+				let request = this.store.clear();
+				request.onsuccess = resolve;
 				request.onerror = reject;
-			}/*/
-			//console.log('Updating', items)
-			items.forEach((i)=>{
-			let request = this.store.put(i);
-				request.onsuccess = handler;
-				request.onerror = reject;
-			});
-			//*/
 		});
 	}
 
-	getAll( options )
+	count(options)
 	{
 		return new Promise((resolve,reject)=>
 		{
+			let queryObject = options && 'index' in options
+				? this.store.index( options.index )
+				: this.store;
 
+			let range		= OptionsUtils.getKeyRange( options );
+			let request = queryObject.count( range );
+
+			request.onerror = reject;
+			request.onsuccess = (evt)=>
+			{
+				resolve( request.result );
+			};
+		});
+	}
+
+	get( key )
+	{
+		return new Promise((resolve,reject)=>
+		{
+			if( this.debug )
+			{
+				console.log("Store name", this.name );
+			}
+
+			let request = this.store.get( key );
+
+			request.onsuccess = ()=>
+			{
+				resolve( request.result );
+			};
+		});
+	}
+
+	getAll( options,customFilter )
+	{
+		if( customFilter )
+			return this.getAllWithCustomFilter(options,customFilter);
+
+		return new Promise((resolve,reject)=>
+		{
 			let queryObject = options && 'index' in options
 				? this.store.index( options.index )
 				: this.store;
@@ -190,13 +169,118 @@ export default class ObjectStore
 		});
 	}
 
-	clear()
+	getAllWithCustomFilter( options, callbackFilter )
 	{
 		return new Promise((resolve,reject)=>
 		{
-				let request = this.store.clear();
-				request.onsuccess = resolve;
+			let queryObject = options && 'index' in options
+				? this.store.index( options.index )
+				: this.store;
+
+			let range		= OptionsUtils.getKeyRange( options );
+			let direction	= OptionsUtils.getDirection( options );
+			let request		= queryObject.openCursor( range, direction );
+
+			let results		= [];
+
+			request.onsuccess = (evt)=>
+			{
+				if( evt.target.result )
+				{
+					if( callbackFilter( evt.target.result.value ) )
+						results.push( evt.target.result.value );
+
+					evt.target.result.continue();
+				}
+				else
+				{
+					//Maybe call resolve
+					resolve( results );
+				}
+			};
+		});
+	}
+
+	getAllIndexesCounts()
+	{
+		return new Promise((resolve,reject)=>
+		{
+			let result 	= {};
+			let names 	= Array.from( this.store.indexNames );
+
+			if( names.length == 0 )
+			{
+				resolve(result);
+				return;
+			}
+
+			let counter = names.length;
+			if( this.debug )
+				console.log('Get all index count for '+this.name );
+			names.forEach( i =>
+			{
+				let index = this.store.index( i );
+				let request = index.count();
 				request.onerror = reject;
+				request.onsuccess = (evt)=>
+				{
+					if( this.debug )
+						console.log('Success Count for '+i );
+					result[ i ] = request.result;
+					counter--;
+					if( counter == 0 )
+						resolve( result );
+				};
+			});
+		});
+	}
+
+	getAllKeys(options)
+	{
+		return new Promise((resolve,reject)=>
+		{
+			let queryObject = options && 'index' in options
+				? this.store.index( options.index )
+				: this.store;
+
+			let range		= OptionsUtils.getKeyRange( options );
+			let count		= OptionsUtils.getCount( options );
+
+			let request	= ( range == null && count == 0 )
+					? queryObject.getAllKeys()
+					: queryObject.getAllKeys( range, count );
+
+			request.onsuccess = ()=>
+			{
+				resolve( request.result );
+			};
+
+			request.onerror = reject;
+		});
+	}
+
+	getBackup()
+	{
+		return new Promise((resolve,reject)=>
+		{
+			let result 	= [];
+			let store	= transaction.objectStore( storeName );
+			let request = store.openCursor();
+
+			request.onerror = reject;
+			request.onsuccess = (evt)=>
+			{
+				if( evt.target.result )
+				{
+					result.push(	evt.target.result.value );
+					evt.target.result.continue();
+				}
+				else
+				{
+					//Maybe call resolve
+					resolve( result );
+				}
+			};
 		});
 	}
 
@@ -233,7 +317,108 @@ export default class ObjectStore
 
 	removeByIndex(options)
 	{
+		return new Promise((resolve,reject)=>
+		{
+			let index = this.store.index( options.index );
+			let range = OptionsUtils.getKeyRange( options );
+			let request = index.openCursor(range);
+			let count = 0;
 
+			request.onsuccess = (evt)=>
+			{
+				let cursor = evt.target.result
+				if( cursor )
+				{
+					cursor.delete();
+					count++;
+					cursor.continue();
+				}
+				else
+				{
+					resolve( count )
+				}
+			}
+			request.onerror = reject;
+		});
+	}
+
+	removeByKeyList(list, opt )
+	{
+		let orderedKeyList = list.slice(0);
+		let options = opt ? opt : {};
+
+		return new Promise((resolve,reject)=>
+		{
+			let queryObject = options && 'index' in options
+				? this.store.index( option.index )
+				: this.store;
+
+			let count 	= 0;
+			let range		= OptionsUtils.getKeyRange( options );
+			let items		= [];
+			let i 			= 0;
+			let cursorReq = queryObject.openCursor( range );
+
+			cursorReq.onsuccess = (event)=>
+			{
+				var cursor = event.target.result;
+
+				if (!cursor)
+				{
+					resolve( count );
+					return;
+				}
+
+				while (key > orderedKeyList[i])
+				{
+					++i;
+					if (i === orderedKeyList.length)
+					{
+						resolve( count );
+						return;
+					}
+				}
+				if (key === orderedKeyList[i])
+				{
+					count++;
+					cursor.delete();
+					cursor.continue();
+				}
+				else
+				{
+					cursor.continue(orderedKeyList[i]);
+				}
+			};
+		})
+	}
+
+	removeByKeyIds2(arrayOfKeyIds )
+	{
+		return new Promise((resolve,reject)=>
+		{
+			let total = arrayOfKeyIds.length;
+			let count = 0;
+			let success = ()=>{
+				count++;
+				total--;
+				if( total == 0 )
+					resolve( count );
+			};
+			let error = (evt)
+			{
+				evt.prefentDefault();
+				evt.stopPropagation();
+				if( total == 0 )
+					resolve( count );
+			}
+
+			arrayOfKeyIds.forEach((key)=>
+			{
+				let request = store.delete( key );
+				request.success = success;
+				request.onerror = error;
+			});
+		});
 	}
 
 	getByKeyIndex(list,opt)
@@ -290,182 +475,61 @@ export default class ObjectStore
 			};
 		});
 	}
-	getByKey(list, opt )
+
+	put( item, key )
 	{
-		if( opt && 'index' in opt )
-			return getByKeyIndex( list, opt );
-
-		if( list.length == 0 )
-			return Promise.resolve([]);
-
 		return new Promise((resolve,reject)=>
 		{
-			let result = [];
-			let count = list.length;
+			let request = key ? this.store.put( item, key ) : this.store.put( item );
 
-			list.forEach((i)=>
+			request.onsuccess = (evt)=>
 			{
-				let request = this.store.get(i);
-				request.onsuccess = ()=>
-				{
-					result.push( request.result );
-					count--;
+				if( this.debug )
+					console.log('Put Item('+this.name+' key:'+key+' item:'+JSON.stringify( item )+' Request Success', evt );
+				resolve(evt.target.result);
+			};
 
-					if( count == 0 )
-						resolve( result );
-				};
+			request.onerror = (evt)=>
+			{
+				if( this.debug )
+					console.log('Put Item('+this.name+' key:'+key+' item:'+JSON.stringify( item )+' Request Error ', evt);
+
+				reject( evt );
+			};
+		});
+	}
+	/*
+	updateItems(items)
+	{
+		return new Promise((resolve,reject)=>
+		{
+			let counter = items.length;
+			let handler = (evt)=>{
+				counter--;
+				if( counter == 0 )
+					resolve();
+			};
+			//console.log('Updating', items)
+			items.forEach((i)=>{
+			let request = this.store.put(i);
+				request.onsuccess = handler;
 				request.onerror = reject;
 			});
 		});
 	}
+	*/
 
-	count(options)
+	updateItems(items)
 	{
-		return new Promise((resolve,reject)=>
-		{
-			let queryObject = options && 'index' in options
-				? this.store.index( options.index )
-				: this.store;
-
-			let range		= OptionsUtils.getKeyRange( options );
-			let request = queryObject.count( range );
-
-			request.onerror = reject;
-			request.onsuccess = (evt)=>
+		let promises = [];
+		items.forEach(i=>{
+			promises.push(new Promise((resolve,reject)=>
 			{
-				resolve( request.result );
-			};
-		});
-	}
-
-	customFilter( options, callbackFilter )
-	{
-		return new Promise((resolve,reject)=>
-		{
-			let queryObject = options && 'index' in options
-				? this.store.index( options.index )
-				: this.store;
-
-			let range		= OptionsUtils.getKeyRange( options );
-			let direction	= OptionsUtils.getDirection( options );
-			let request		= queryObject.openCursor( range, direction );
-
-			let results		= [];
-
-			request.onsuccess = (evt)=>
-			{
-				if( evt.target.result )
-				{
-					if( callbackFilter( evt.target.result.value ) )
-						results.push( evt.target.result.value );
-
-					evt.target.result.continue();
-				}
-				else
-				{
-					//Maybe call resolve
-					resolve( results );
-				}
-			};
-		});
-	}
-
-	deleteByKeyIds(storeName, arrayOfKeyIds )
-	{
-		let total = 0 ;
-
-		return this.count( storeName,{})
-		.then((count)=>
-		{
-			total = count;
-			return new Promise((resolve,reject)=>
-			{
-				let transaction = this.database.transaction([storeName], 'readwrite' );
-				let store = transaction.objectStore( storeName );
-
-				transaction.oncomplete = (evt)=>
-				{
-					resolve( evt );
-				};
-
-				transaction.onerror = (evt)=>
-				{
-					reject( evt );
-				};
-
-				arrayOfKeyIds.forEach((key)=>
-				{
-					let request = store.delete( key );
-				});
-			});
-		})
-		.then(()=>
-		{
-			return this.count( storeName, {} );
-		})
-		.then((count)=>
-		{
-			return Promise.resolve( total - count );
-		});
-	}
-	getAllIndexesCounts()
-	{
-		return new Promise((resolve,reject)=>
-		{
-			let result 	= {};
-			let names 	= Array.from( this.store.indexNames );
-
-			if( names.length == 0 )
-			{
-				resolve(result);
-				return;
-			}
-
-			let counter = names.length;
-			if( this.debug )
-				console.log('Get all index count for '+this.name );
-			names.forEach( i =>
-			{
-				let index = this.store.index( i );
-				let request = index.count();
+				let request = this.store.put( i );
+				request.onsuccess = resolve;
 				request.onerror = reject;
-				request.onsuccess = (evt)=>
-				{
-					if( this.debug )
-						console.log('Success Count for '+i );
-					result[ i ] = request.result;
-					counter--;
-					if( counter == 0 )
-						resolve( result );
-				};
-			});
-
+			}))
 		});
-	}
-	getBackup()
-	{
-		return new Promise((resolve,reject)=>
-		{
-			let result 	= [];
-			let store	= transaction.objectStore( storeName );
-			let request = store.openCursor();
-
-			request.onerror = reject;
-			request.onsuccess = (evt)=>
-			{
-				if( evt.target.result )
-				{
-					result.push(  evt.target.result.value );
-					evt.target.result.continue();
-				}
-				else
-				{
-					//Maybe call resolve
-					resolve( result );
-				}
-			};
-		});
+		return Promise.all( promises );
 	}
 }
-
-

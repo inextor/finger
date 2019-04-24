@@ -1,0 +1,199 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Refactored date examples</title>
+
+  <link rel="stylesheet" href="https://code.jquery.com/qunit/qunit-2.9.2.css">
+  <script src="https://code.jquery.com/qunit/qunit-2.9.2.js"></script>
+  <script type="module">
+	import DatabaseStore from '../DatabaseStore.js';
+
+	let prepareDatabase  = (name)=>
+	{
+		let d			= DatabaseStore.builder(name,1,{user: "id,name,age"});
+
+		return d.init()
+		.then(()=>
+		{
+			return d.clear('user');
+		})
+		.then(()=>
+		{
+			let items	= [];
+			for(let i=0;i<100;i++)
+			{
+				items.push
+				({
+					id: i
+					,name: "name"+i
+					,age: 100-i
+				})
+			}
+			return d.addAll('user',items)
+		})
+		.then(()=>
+		{
+			return d;
+		});
+	}
+
+  QUnit.test("Test Init", function( assert ) {
+				var done = assert.async( 1 );
+				let d = DatabaseStore.builder('test1',1,{user: "id,name,age"});
+				d.debug = true;
+				console.log("Starting")
+				d.init().then(()=>
+				{
+					assert.ok(true,"Init test");
+					done();
+					return d.clear('user');
+				})
+				.then(()=>
+				{
+					d.close();
+				})
+				.catch((e)=>
+				{
+					assert.ok(false,"Init test failed");
+					d.close();
+				});
+  });
+
+  QUnit.test("Add Functionality", function( assert ) {
+				assert.timeout(10000)
+				var done = assert.async( 4 );
+				let d = DatabaseStore.builder('test2',1,{user: "id,name,age"});
+				d.init()
+				.then(()=>
+				{
+					return d.clear('user');
+				})
+				.then(()=>
+				{
+        	return d.add('user',{id:1,'name':'nextor',age:29}).then(()=>
+					{
+						assert.ok(true,'Testing Add function 1');
+						done();
+						console.log('Done1')
+					})
+				}).then(()=>
+				{
+					d.addAll('user',[
+							{id:2,'name':'foo',age:29}
+							,{id:3,'name':'foo2',age:31}
+							,{id:4,'name':'foo3',age:30}
+					])
+					.then((result)=>
+					{
+						assert.ok(result.length == 3,'Testing addAll done2');
+						done();
+						console.log("Done2");
+
+						return d.addAll('user',[
+							{id:2,'name':'foo',age:29}
+							,{id:3,'name':'foo2',age:31}
+							,{id:5,'name':'foo3',age:30}
+						],true)
+					})
+					.then((result)=>{
+							assert.ok(result.length == 1,'Testing addAll with insertIgnore done 3');
+							console.log('Done 3')
+							done();
+					});
+				})
+				.catch((e)=>
+				{
+					console.log("Error on init db", e);
+				});
+
+				let d3 = DatabaseStore.builder('test3',1,{user: "id,name,age"});
+				d3.init().then(()=>{
+					return d3.clear('user');
+				})
+				.then(()=>
+				{
+					let items = [];
+					for(var i=0;i<10000;i++)
+					{
+						items.push({ id: i, name:"name"+i,age:30});
+					}
+        	d3.addAllFast('user',items, true ).then((result)=>
+					{
+						done();
+						console.log('Add all returns a done4',result );
+						assert.ok(true,'addAllFast Ok')
+					})
+				})
+				.catch((e)=>{
+					console.log('Error on ',e)
+				})
+	});
+
+  QUnit.test("Clear Functionality", function( assert ) {
+
+			let done = assert.async();
+
+			prepareDatabase('clear').then((d)=>
+			{
+					console.log("Getting all element")
+					assert.ok(true,"Adding an element")
+					return d.getAll('user',{})
+					.then((result)=>
+					{
+						console.log("Testing all elements length")
+						assert.ok(result.length == 100,"Testing getAll Elements count"+result.length)
+						return d.clear('user');
+					})
+					.then((result)=>
+					{
+						console.log("Result of clear",result);
+						assert.ok( true,"Clear success")
+						return d.getAll('user');
+					})
+					.then((result)=>
+					{
+						done();
+						assert.ok( result.length == 0, "There are 0 elements on the DB as promised");
+					})
+					.catch((e)=>{
+						console.log("An error occurred",e);
+						assert.ok(false,"It fails in something");
+						done();
+					});
+			})
+			.catch((e)=>
+			{
+				console.log("An error occourred",e);
+				assert.ok(false,"Unexpected error");
+			});
+	});
+
+
+	/*
+        count(options)
+        get( key )
+        getAll( options,customFilter )
+        getAllWithCustomFilter( options, callbackFilter )
+        getAllIndexesCounts()
+        getAllKeys(options)
+        getBackup()
+        remove( key )
+        removeAll( options )
+        removeByIndex(options)
+        removeByKeyList(list, options)
+        removeByKeyIds2(arrayOfKeyIds )
+        getByKeyIndex(list,opt)
+        put( item, key )
+        updateItems(items)
+        updateItems(items);
+*/
+
+  </script>
+</head>
+<body>
+
+<div id="qunit"></div>
+
+</body>
+</html>

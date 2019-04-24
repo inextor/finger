@@ -1,6 +1,6 @@
 export default class OptionsUtils
 {
-  getCount( options )
+	static getCount( options )
 	{
 		if( options && 'count' in options )
 			return options.count;
@@ -66,3 +66,4 @@ export default class OptionsUtils
 		return null;
 	}
 }
+

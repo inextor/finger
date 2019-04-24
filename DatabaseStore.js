@@ -1,4 +1,6 @@
 import ObjectStore from './ObjectStore.js';
+import SchemaBuilder from './SchemaBuilder.js';
+
 export default class DatabaseStore
 {
 	/*
@@ -40,23 +42,20 @@ export default class DatabaseStore
 		this.database = null;
 	}
 
+	static builder(db_name,version, store_strings)
+	{
+			return new DatabaseStore( SchemaBuilder.create(db_name, version, store_strings ) );
+	}
+
 	static getDefaultSchema()
 	{
-		return {
-			name		: 'default'
-			,version	: 1
-			,stores		:{
-				keyValue :
-				{
-					keyPath : null
-					,autoIncrement : false
-				}
-			}
-		};
+		return  SchemaBuilder.create("default",1,{ keyValue: "id"})
 	}
 
 	init()
 	{
+		if( this.debug )
+			console.log("Init with schema ",this.schema );
 		return new Promise((resolve,reject)=>
 		{
 			let DBOpenRequest	   = window.indexedDB.open( this.schema.name || 'default', this.schema.version );
@@ -170,7 +169,7 @@ export default class DatabaseStore
 		throw 'Database is not initialized';
 	}
 
-	addItem( storeName, item, key )
+	add( storeName, item, key )
 	{
 		return this.transaction([storeName], 'readwrite',( stores,transaction )=>
 		{
@@ -178,16 +177,24 @@ export default class DatabaseStore
 		});
 	}
 
-	addItems( storeName, items, insertIgnore)
+	addAll( storeName, items, insertIgnore)
 	{
 		return this.transaction([storeName],'readwrite',(stores,transaction)=>
 		{
-			return stores[storeName].addAllFast( items, insertIgnore );
+			return stores[storeName].addAll( items,insertIgnore );
+		});
+	}
+	addAllFast( storeName, items, insertIgnore)
+	{
+		return this.transaction([storeName],'readwrite',(stores,transaction)=>
+		{
+			return stores[storeName].addAllFast( items,insertIgnore );
 		});
 	}
 
 	clear(...theArgs)
 	{
+		console.log(theArgs)
 		return this.transaction(theArgs,'readwrite',(stores,transaction)=>
 		{
 			let promises = [];
@@ -327,7 +334,7 @@ export default class DatabaseStore
 
 	close()
 	{
-		this.database.close();
+		this.	database.close();
 	}
 
 	restoreBackup( json_obj, ignoreErrors )
