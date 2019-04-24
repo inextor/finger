@@ -3,7 +3,6 @@
 <head>
   <meta charset="utf-8">
   <title>Refactored date examples</title>
-
   <link rel="stylesheet" href="https://code.jquery.com/qunit/qunit-2.9.2.css">
   <script src="https://code.jquery.com/qunit/qunit-2.9.2.js"></script>
   <script type="module">
@@ -206,12 +205,53 @@
 		})
 	});
 
+  	QUnit.test("Update Functionality", function( assert ) {
+		let done = assert.async(5)
+		assert.timeout(1000);
+		prepareDatabase('update').then((d)=>
+		{
+			console.log("First");
+			d.update('user',{ id: 1, name: 'Jhon doe',age: 80})
+			.then((result)=>
+			{
+				assert.ok(true,"Updated success");
+				done()
+				return d.get('user',1);
+			})
+			.then((user)=>
+			{
+				assert.ok( user.name === 'Jhon doe',"Data was succesfully updated and retrived");
+				done()
+				return d.getAll('user');
+			})
+			.then((all_users)=>
+			{
+				all_users.forEach(user=> user.age = 2 );
+				done()
+				return d.updateAll('user', all_users );
+			})
+			.then((users)=>
+			{
+				assert.ok(true,"Update opeartion success");
+				done()
+				return d.getAll('user',{'index':'age','=':2});
+			})
+			.then((users)=>
+			{
+				assert.ok(users.length == 100,"Was succesfully updated and retrived");
+				done();
+			})
+			.catch((e)=>
+			{
+				console.log("An error occourred", e );
+				assert.ok(false,'Something fails');
+				done();
+			});
+		});
+	});
 
 
 	/*
-        count(options)
-        get( key )
-        getAll( options,customFilter )
         getAllWithCustomFilter( options, callbackFilter )
         getAllIndexesCounts()
         getAllKeys(options)
@@ -223,6 +263,7 @@
         removeByKeyIds2(arrayOfKeyIds )
         getByKeyIndex(list,opt)
         put( item, key )
+		update
         updateItems(items)
         updateItems(items);
 */

@@ -169,6 +169,17 @@ export default class ObjectStore
 		});
 	}
 
+	getAllPrimaryKeys(options,customFilter)
+	{
+		if( customFilter )
+			this.getAllPrimaryKeysWithCustomFilter( options, customFilter );
+		return new Promise((resolve,reject)=>
+		{
+
+
+		});
+	}
+
 	getAllWithCustomFilter( options, callbackFilter )
 	{
 		return new Promise((resolve,reject)=>
@@ -326,7 +337,7 @@ export default class ObjectStore
 
 			request.onsuccess = (evt)=>
 			{
-				let cursor = evt.target.result
+				let cursor = evt.target.result;
 				if( cursor )
 				{
 					cursor.delete();
@@ -335,9 +346,9 @@ export default class ObjectStore
 				}
 				else
 				{
-					resolve( count )
+					resolve( count );
 				}
-			}
+			};
 			request.onerror = reject;
 		});
 	}
@@ -389,7 +400,7 @@ export default class ObjectStore
 					cursor.continue(orderedKeyList[i]);
 				}
 			};
-		})
+		});
 	}
 
 	removeByKeyIds2(arrayOfKeyIds )
@@ -404,13 +415,13 @@ export default class ObjectStore
 				if( total == 0 )
 					resolve( count );
 			};
-			let error = (evt)
+			let error = (evt)=>
 			{
 				evt.prefentDefault();
 				evt.stopPropagation();
 				if( total == 0 )
 					resolve( count );
-			}
+			};
 
 			arrayOfKeyIds.forEach((key)=>
 			{
@@ -436,7 +447,9 @@ export default class ObjectStore
 			let items		= [];
 
 			var i = 0;
-			var cursorReq = queryObject.openCursor( range );
+			var cursorReq = queryObject == this.store
+				? this.store.openCursor( range )
+				: queryObject.openKeyCursor();
 
 			cursorReq.onsuccess = (event)=>
 			{
@@ -519,7 +532,16 @@ export default class ObjectStore
 	}
 	*/
 
-	updateItems(items)
+	update( item, key )
+	{
+		return new Promise((resolve,reject)=>
+		{
+			let request = key === undefined ? this.store.put( item ) : this.store.put( item,key);
+			request.success = resolve;
+			request.success = reject;
+		});
+	}
+	updateAll(items)
 	{
 		let promises = [];
 		items.forEach(i=>{
@@ -528,7 +550,7 @@ export default class ObjectStore
 				let request = this.store.put( i );
 				request.onsuccess = resolve;
 				request.onerror = reject;
-			}))
+			}));
 		});
 		return Promise.all( promises );
 	}

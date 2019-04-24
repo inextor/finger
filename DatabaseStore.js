@@ -243,9 +243,13 @@ export default class DatabaseStore
 		},'customFilter '+storeName);
 	}
 
-	put( storeName, item )
+	put( storeName, item, key )
 	{
-		return this.putItems(storeName, [item ] );
+		return this.transaction([storeName],'readwrite',(stores,transaction)=>
+		{
+			return stores[ storeName ].put( item, key);
+		},'put'+storeName );
+
 	}
 
 	putItems( storeName, items )
@@ -253,11 +257,16 @@ export default class DatabaseStore
 		return this.updateItems(storeName, items );
 	}
 
-	updateItems( storeName, items_array )
+	update( storeName, item, key )
+	{
+		return this.put( storeName, item, key );
+	}
+
+	updateAll( storeName, items_array )
 	{
 		return this.transaction([storeName],'readwrite',(stores,transaction)=>
 		{
-			return stores[ storeName ].updateItems( items_array );
+			return stores[storeName].updateAll( items_array );
 		},'updateItems '+storeName );
 	}
 
