@@ -134,6 +134,7 @@ export default class ObjectStore
 			}
 
 			let request = this.store.get( key );
+			request.error = reject;
 
 			request.onsuccess = ()=>
 			{
@@ -160,12 +161,13 @@ export default class ObjectStore
 					? queryObject.getAll()
 					: queryObject.getAll( range, count );
 
+			request.onerror = reject;
+
 			request.onsuccess = ()=>
 			{
 				resolve( request.result );
 			};
 
-			request.onerror = reject;
 		});
 	}
 
@@ -361,7 +363,7 @@ export default class ObjectStore
 		return new Promise((resolve,reject)=>
 		{
 			let queryObject = options && 'index' in options
-				? this.store.index( option.index )
+				? this.store.index( options.index )
 				: this.store;
 
 			let count 	= 0;
@@ -440,7 +442,7 @@ export default class ObjectStore
 		return new Promise((resolve,reject)=>
 		{
 			let queryObject = options && 'index' in options
-				? this.store.index( option.index )
+				? this.store.index( options.index )
 				: this.store;
 
 			let range		= OptionsUtils.getKeyRange( options );
