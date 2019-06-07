@@ -434,7 +434,7 @@ export default class ObjectStore
 		});
 	}
 
-	getByKeyIndex(list,opt)
+	getByKey(list,opt)
 	{
 		let orderedKeyList = list.slice(0);
 		let options = opt ? opt : {};
@@ -481,9 +481,26 @@ export default class ObjectStore
 					// a single step in case next item has the same key or possibly our
 					// next key in orderedKeyList.
 					//onfound(cursor.value);
-					items.push( cursor.value );
-					cursor.continue();
-				} else {
+					if( cursor.value !== undefined )
+					{
+						items.push( cursor.value );
+					}
+					else if('primaryKey' in cursor )
+					{
+						let request = this.store.get( cursor.primaryKey );
+						request.onsuccess = ()=>
+						{
+							items.push( request.result );
+							cursor.continue();
+						};
+						request.onerror= ()=>
+						{
+							cursor.continue();
+						};
+					}
+				}
+				else
+				{
 					// cursor.key not yet at orderedKeyList[i]. Forward cursor to the next key to hunt for.
 					cursor.continue(orderedKeyList[i]);
 				}
