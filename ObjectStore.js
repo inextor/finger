@@ -476,9 +476,7 @@ export default class ObjectStore
 			let items		= [];
 
 			var i = 0;
-			var cursorReq = queryObject == this.store
-				? this.store.openCursor( range )
-				: queryObject.openKeyCursor();
+			var cursorReq = queryObject.openCursor( range );
 
 			cursorReq.onsuccess = (event)=>
 			{
@@ -508,23 +506,7 @@ export default class ObjectStore
 					// a single step in case next item has the same key or possibly our
 					// next key in orderedKeyList.
 					//onfound(cursor.value);
-					if( cursor.value !== undefined )
-					{
-						items.push( cursor.value );
-					}
-					else if('primaryKey' in cursor )
-					{
-						let request = this.store.get( cursor.primaryKey );
-						request.onsuccess = ()=>
-						{
-							items.push( request.result );
-							cursor.continue();
-						};
-						request.onerror= ()=>
-						{
-							cursor.continue();
-						};
-					}
+					items.push( cursor.value );
 				}
 				else
 				{
