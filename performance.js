@@ -60,7 +60,7 @@ async function testPerformance() {
     log(`=========`);
     log(`Let's put 10,000 documents into indexedDB! ...`);
     let time = performance.now();
-   let x  = await db.addItems('raindrops',drops);//db.raindrops.bulkPut(drops);
+   let x  = await db.addAll('raindrops',drops);//db.raindrops.bulkPut(drops);
 		console.log( x );
 
     log(`Put operations done. Took ${Math.round(performance.now() - time)} milliseconds.`);

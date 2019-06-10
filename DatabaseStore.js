@@ -254,7 +254,7 @@ export default class DatabaseStore
 
 	putItems( storeName, items )
 	{
-		return this.updateItems(storeName, items );
+		return this.updateAll(storeName, items );
 	}
 
 	update( storeName, item, key )

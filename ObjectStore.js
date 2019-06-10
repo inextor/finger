@@ -134,7 +134,7 @@ export default class ObjectStore
 			}
 
 			let request = this.store.get( key );
-			request.error = reject;
+			request.onerror = reject;
 
 			request.onsuccess = ()=>
 			{
@@ -441,19 +441,23 @@ export default class ObjectStore
 		{
 			let option = {'=':i};
 
-			if( 'index' in opt )
+			if(opt && 'index' in opt )
 				option.index = opt.index;
 
-			promises.push( getAll(options) );
+			promises.push( this.getAll(option) );
 		});
 
 		let result = [];
-		Promise.all( promises ).then((r)=>
+		return Promise.all( promises ).then((r)=>
 		{
 			r.forEach((i)=>
 			{
-				r.push(i);
+				i.forEach((k)=>
+				{
+					result.push(k);
 			});
+			});
+			return Promise.resolve( result );
 		});
 	}
 
