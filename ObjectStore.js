@@ -434,33 +434,6 @@ export default class ObjectStore
 		});
 	}
 
-	getByKey2(list, opt )
-	{
-		let promises  = [];
-		list.forEach((i)=>
-		{
-			let option = {'=':i};
-
-			if(opt && 'index' in opt )
-				option.index = opt.index;
-
-			promises.push( this.getAll(option) );
-		});
-
-		let result = [];
-		return Promise.all( promises ).then((r)=>
-		{
-			r.forEach((i)=>
-			{
-				i.forEach((k)=>
-				{
-					result.push(k);
-			});
-			});
-			return Promise.resolve( result );
-		});
-	}
-
 	getByKey(list,opt)
 	{
 		let orderedKeyList = list.slice(0);
