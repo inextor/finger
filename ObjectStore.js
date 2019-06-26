@@ -314,7 +314,7 @@ export default class ObjectStore
 				if( evt.target.result )
 				{
 					if( callbackFilter( evt.target.result.value ) )
-						result.delete();
+						evt.target.result.delete();
 
 					evt.target.result.continue();
 				}
