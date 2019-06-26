@@ -308,20 +308,24 @@ export default class ObjectStore
 			let range		= OptionsUtils.getKeyRange( options );
 			let direction	= OptionsUtils.getDirection( options );
 			let request		= queryObject.openCursor( range, direction );
+			let counter		= 0;
 
 			request.onsuccess = (evt)=>
 			{
 				if( evt.target.result )
 				{
 					if( callbackFilter( evt.target.result.value ) )
+					{
 						evt.target.result.delete();
+						counter++;
+					}
 
 					evt.target.result.continue();
 				}
 				else
 				{
 					//Maybe call resolve
-					resolve( results );
+					resolve( counter );
 				}
 			};
 		});
