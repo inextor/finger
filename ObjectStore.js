@@ -277,8 +277,7 @@ export default class ObjectStore
 		return new Promise((resolve,reject)=>
 		{
 			let result 	= [];
-			let store	= transaction.objectStore( storeName );
-			let request = store.openCursor();
+			let request = this.store.openCursor();
 
 			request.onerror = reject;
 			request.onsuccess = (evt)=>
