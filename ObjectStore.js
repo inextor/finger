@@ -297,6 +297,36 @@ export default class ObjectStore
 		});
 	}
 
+	removeWithFilter(options, callbackFilter )
+	{
+		return new Promise((resolve,reject)=>
+		{
+			let queryObject = options && 'index' in options
+				? this.store.index( options.index )
+				: this.store;
+
+			let range		= OptionsUtils.getKeyRange( options );
+			let direction	= OptionsUtils.getDirection( options );
+			let request		= queryObject.openCursor( range, direction );
+
+			request.onsuccess = (evt)=>
+			{
+				if( evt.target.result )
+				{
+					if( callbackFilter( evt.target.result.value ) )
+						result.delete();
+
+					evt.target.result.continue();
+				}
+				else
+				{
+					//Maybe call resolve
+					resolve( results );
+				}
+			};
+		});
+	}
+
 	remove( key )
 	{
 		return new Promise((resolve,reject)=>
