@@ -513,6 +513,7 @@ export default class ObjectStore
 					// next key in orderedKeyList.
 					//onfound(cursor.value);
 					items.push( cursor.value );
+					cursor.continue();
 				}
 				else
 				{
