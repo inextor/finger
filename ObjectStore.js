@@ -393,6 +393,7 @@ export default class ObjectStore
     {
 		return this.removeByKeyList( list,opt);
     }
+
 	removeByKeyList(list, opt )
 	{
 		let orderedKeyList = list.slice(0);
