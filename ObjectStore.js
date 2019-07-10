@@ -196,6 +196,8 @@ export default class ObjectStore
 
 			let results		= [];
 
+			request.onerror = reject;
+
 			request.onsuccess = (evt)=>
 			{
 				if( evt.target.result )
@@ -414,6 +416,7 @@ export default class ObjectStore
 					resolve( count );
 					return;
 				}
+                var key = cursor.key;
 
 				while (key > orderedKeyList[i])
 				{
@@ -483,6 +486,8 @@ export default class ObjectStore
 
 			var i = 0;
 			var cursorReq = queryObject.openCursor( range );
+
+			cursorReq.onerror = reject;
 
 			cursorReq.onsuccess = (event)=>
 			{
