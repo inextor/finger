@@ -2,7 +2,7 @@ import {ObjectStore} from "./ObjectStore";
 
 export interface StoreDictionary
 {
-	[key:string]:ObjectStore<any,any>;
+	[key:string]:ObjectStore<any>;
 }
 
 export interface IndexSchema

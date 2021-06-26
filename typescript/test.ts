@@ -1,9 +1,5 @@
 import {DatabaseStore} from './DatabaseStore';
-import {ObjectStore} from './ObjectStore';
 import {SchemaBuilder} from './SchemeBuilder';
-
-
-type TransactionCallback= (stores:ObjectStore[]:)=>boolean | null;
 
 //let db = new Db
 //({
@@ -80,7 +76,7 @@ async function testThis()
 		console.log('Fua2 error' ,fua2 );
 	}
 
-	let usersArray1			= await s.getAll('user');
+	let usersArray1			= await s.getAll('user',null);
 	let childsOnly			= await s.getAll('user',{index:'tagIndex','=':'child'});
 	let childsOnlyCount		= await s.count('user',{index:'tagIndex','=':'child'});
 
@@ -96,16 +92,16 @@ async function testThis()
 	if( removedElements !== 5 )
 		throw 'RemoveAll with options fails';
 
-	let addItemResponse1		= await	s.addItem('keyValue','foo1',{hello:'world'});
-	let addItemResponse2		= await	s.addItem('keyValue','foo2',{bye_bye:'cruel world'});
+	let addItemResponse1		= await	s.add('keyValue','foo1',{hello:'world'});
+	let addItemResponse2		= await	s.add('keyValue','foo2',{bye_bye:'cruel world'});
 	let keyValueItem			= await s.get('keyValue','foo1');
 
-	let allKeyValueItems1		= await s.getAll('keyValue');
+	let allKeyValueItems1		= await s.getAll('keyValue',null);
 	console.log('Object By key is', keyValueItem );
 	console.log('All items stored in keyValue are', allKeyValueItems1 );
 
 	let removeElementResponse	= await s.remove('keyValue','foo1');
-	let allKeyValueItems2		= await s.getAll('keyValue');
+	let allKeyValueItems2		= await s.getAll('keyValue',null);
 	console.log('All items stored in keyValue after delete are ', allKeyValueItems2 );
 
 	let responseClear			= await s.clear('user','keyValue');

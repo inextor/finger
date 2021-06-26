@@ -171,7 +171,7 @@ export class DatabaseStore
 		throw 'Database is not initialized';
 	}
 
-	add<T,K>( storeName:string, item:T, key:K )
+	add<T,K>( storeName:string, item:T, key:any )
 	{
 		return this.transaction([storeName], 'readwrite',(stores)=>
 		{
